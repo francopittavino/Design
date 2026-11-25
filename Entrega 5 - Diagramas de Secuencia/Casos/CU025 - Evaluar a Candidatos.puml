@@ -1,0 +1,176 @@
+@startuml CU025_EvaluarACandidatos
+
+actor Consultor
+boundary "Pantalla\nEvaluar Candidatos" as PANT
+control "Gestor\nCandidatos" as GCAN
+control "Gestor\nPuestos" as GPUE
+control "Gestor\nEvaluación" as GEVA
+participant "candidato" as CAND
+participant "puesto" as PUES
+database "Candidato\nDAO" as CDAO
+database "Puesto\nDAO" as PDAO
+database "Evaluacion\nDAO" as EDAO
+control "Servicios Externos\nFacade" as FAC
+collections "Exportador\nResultados" as EXP
+
+Consultor -> PANT : Selecciona la opción "Evaluar Candidatos" del menú
+PANT --> Consultor : Muestra la pantalla de búsqueda\n(Apellido, Nombre, Nro de Candidato)
+
+loop mientras el actor no presione "Siguiente"
+
+  Consultor -> PANT : Completa los filtros
+  PANT -> GCAN : buscarCandidatos(filtros)
+  GCAN -> CDAO : buscarPorCriterios(apellido, nombre, nro)
+  CDAO --> GCAN : candidatos
+  GCAN --> PANT : listaCandidatosDTO
+  PANT --> Consultor : Completa la grilla de candidatos
+
+  alt El actor selecciona candidatos y presiona "Agregar"
+    Consultor -> PANT : Selecciona candidatos y presiona "Agregar"
+    PANT --> Consultor : Los agrega a la grilla "Candidatos a evaluar"
+  else No se seleccionaron candidatos
+    Consultor -> PANT : Presiona "Agregar"
+    PANT --> Consultor : "Se debe seleccionar uno o más candidatos"
+  else El actor presiona "Quitar"
+    Consultor -> PANT : Selecciona candidatos a evaluar y presiona "Quitar"
+    PANT --> Consultor : Los quita de la grilla "Candidatos a evaluar"
+  end
+
+end
+
+Consultor -> PANT : Presiona "Siguiente"
+PANT -> GCAN : evaluarCandidatos(nrosCandidatos, null)
+
+note right of GCAN
+  Todavía no se eligió el puesto,
+  por eso se pasa null.
+end note
+
+loop por cada candidato a evaluar
+  GCAN -> CDAO : buscarPorNroCandidato(nro)
+  CDAO --> GCAN : candidato
+  GCAN -> CAND : tieneCuestionarioActivo()
+  CAND --> GCAN : true / false
+end
+
+GCAN --> PANT : listaCandidatosDTO
+
+alt Existen candidatos con cuestionarios activos o en proceso
+
+  PANT --> Consultor : Informa quién/quiénes tienen cuestionarios activos\no en proceso y no pueden ser evaluados
+  note right of PANT : Vuelve a la selección de candidatos
+
+else Ningún candidato tiene cuestionarios activos o en proceso
+
+  PANT -> GPUE : buscarPuestos(filtros)
+  GPUE -> PDAO : buscarPorFiltros(filtros)
+  PDAO --> GPUE : puestos
+  GPUE --> PANT : listaPuestosDTO
+  PANT --> Consultor : Muestra la pantalla de Evaluación de Candidatos
+
+end
+
+loop mientras no se seleccione una función
+
+  alt El actor selecciona la función o puesto
+    Consultor -> PANT : Selecciona la función o puesto
+    PANT --> Consultor : Muestra la función, la empresa y las competencias\ncon su ponderación requerida
+  else El actor presiona "Siguiente" sin seleccionar una función
+    Consultor -> PANT : Presiona "Siguiente"
+    PANT --> Consultor : "Se debe seleccionar una función"
+  end
+
+end
+
+Consultor -> PANT : Presiona "Siguiente"
+PANT -> GEVA : validarCompetenciasEvaluables(puestoDTO)
+GEVA -> PUES : todasCompetenciasEvaluables()
+PUES --> GEVA : true / false
+GEVA --> PANT : true / false
+
+note right of PUES
+  Una competencia se puede evaluar si
+  tiene al menos un factor con 2 o más
+  preguntas.
+end note
+
+alt Alguna competencia del puesto no puede ser evaluada
+
+  PANT --> Consultor : Muestra las competencias que no pueden ser evaluadas
+  Consultor -> PANT : Presiona "Aceptar"
+  PANT --> Consultor : Vuelve a la pantalla principal
+
+else Todas las competencias pueden ser evaluadas
+
+  PANT -> GEVA : generarCuestionarios(evaluacionDTO)
+  GEVA --> PANT : listaCuestionariosDTO
+  PANT --> Consultor : Muestra los candidatos a evaluar (Apellido, Nombre,\nTipo y Nro de documento, Clave de ingreso)
+
+  note right of GEVA
+    Las claves se generan al azar, con letras
+    y dígitos, y tienen 8 caracteres.
+  end note
+
+  alt El actor presiona "Cancelar"
+
+    Consultor -> PANT : Presiona "Cancelar"
+    PANT --> Consultor : Vuelve a la pantalla principal
+
+  else El actor presiona "Finalizar"
+
+    Consultor -> PANT : Presiona "Finalizar"
+    PANT -> GEVA : evaluarCandidatos(candidatos, puestoDTO)
+    create participant "evaluacion" as EVAL
+    GEVA --> EVAL : <<crear>>
+    GEVA -> EVAL : crearCuestionarios()
+
+    note right of EVAL
+      Todos los cuestionarios salen del mismo
+      modelo y se crean en estado "Activo".
+    end note
+
+    GEVA -> EDAO : guardar(evaluacion)
+    GEVA --> PANT : evaluacionDTO
+    PANT --> Consultor : "¿Desea exportar la lista de candidatos\ncon sus claves a un archivo Excel?"
+
+    alt El actor selecciona que no desea exportar
+
+      Consultor -> PANT : Selecciona "No"
+
+    else El actor selecciona que desea exportar
+
+      loop mientras el actor no presione "Guardar"
+
+        Consultor -> PANT : Selecciona "Sí"
+        PANT --> Consultor : Muestra la pantalla para elegir la carpeta
+
+        alt El actor presiona "Cancelar"
+          Consultor -> PANT : Presiona "Cancelar"
+          PANT --> Consultor : Vuelve a preguntar si desea exportar
+        else El actor selecciona la carpeta y presiona "Guardar"
+          Consultor -> PANT : Selecciona la carpeta y presiona "Guardar"
+          PANT -> GEVA : exportarClaves(evaluacionDTO, ruta)
+          GEVA -> FAC : exportarResultados(puesto, "EXCEL", ruta)
+          FAC -> EXP : exportarExcel(candidatos, ruta)
+          EXP --> FAC : true
+          FAC --> GEVA : true
+          GEVA --> PANT : true
+          PANT --> Consultor : Guarda el archivo
+
+          note right of FAC
+            Nombre del archivo:
+            aaaa-mm-dd-hh-mm-NombreFunción.xls
+          end note
+        end
+
+      end
+
+    end
+
+    PANT --> Consultor : Vuelve a la pantalla principal
+
+  end
+
+end
+
+@enduml

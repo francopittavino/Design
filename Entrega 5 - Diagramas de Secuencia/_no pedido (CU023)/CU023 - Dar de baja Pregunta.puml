@@ -1,0 +1,46 @@
+@startuml CU023_DarDeBajaPregunta
+
+actor Consultor
+boundary "Pantalla\nGestión Preguntas" as PANT
+control "Gestor\nPreguntas" as GES
+database "Pregunta\nDAO" as DAO
+database "Registro Auditoria\nDAO" as ADAO
+
+Consultor -> PANT : Selecciona una pregunta y presiona "Eliminar"
+PANT --> Consultor : "Los datos de la pregunta <Nombre Pregunta>\nserán eliminados del sistema"
+
+alt El actor presiona "CANCELAR"
+
+  Consultor -> PANT : Presiona "CANCELAR"
+  PANT --> Consultor : Vuelve a la grilla sin cambios
+
+else El actor presiona "ELIMINAR"
+
+  Consultor -> PANT : Presiona "ELIMINAR"
+  PANT -> GES : darDeBajaPregunta(id)
+  GES -> DAO : buscarPorId(id)
+  DAO --> GES : pregunta
+  GES -> DAO : eliminarLogico(id)
+
+  note right of DAO
+    La baja es lógica (activo = false),
+    no se borra de la base.
+  end note
+
+  create participant "registro :\nRegistroAuditoria" as REG
+  GES --> REG : <<crear>>
+  GES -> ADAO : guardar(registro)
+
+  note right of ADAO
+    Se registra el usuario que eliminó
+    la pregunta y la fecha y hora.
+  end note
+
+  PANT --> Consultor : "Los datos de la pregunta <Nombre Pregunta>\nhan sido eliminados del sistema."
+  Consultor -> PANT : Presiona cualquier tecla
+
+end
+
+PANT --> Consultor : Vuelve a la pantalla de Gestión de Preguntas
+
+@enduml

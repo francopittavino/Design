@@ -1,0 +1,244 @@
+@startuml CU026_CompletarCuestionario
+
+actor Candidato
+boundary "Pantalla\nCompletar Cuestionario" as PANT
+control "Gestor\nCuestionario" as GCUE
+participant "cuestionario" as CUES
+participant "estadoActual" as EST
+participant "evaluacion" as EVAL
+participant "puesto" as PUES
+participant "competencia" as COMP
+participant "factor" as FACT
+database "Cuestionario\nDAO" as CDAO
+
+note over Candidato, PANT
+  El candidato ya se autenticó en el CU001
+  (tipo y nro de documento + clave).
+  El CU001 dejó en la sesión del candidato el
+  cuestionarioDTO, de donde sale el idCuestionario.
+end note
+
+Candidato -> PANT : Ingresa a completar el cuestionario
+PANT -> GCUE : verificarTiempo(cuestionarioDTO)
+GCUE -> CDAO : buscarPorId(cuestionarioDTO.idCuestionario)
+CDAO --> GCUE : cuestionario
+GCUE -> CUES : registrarAcceso()
+note right of CUES
+  Incrementa la cantidad de accesos y
+  actualiza la fecha del último acceso.
+end note
+GCUE -> CUES : superaTiempoMaximo()
+CUES -> EST : verificarTiempo(cuestionario)
+
+note right of EST
+  Se toma la fecha y hora actual y se le resta
+  la fecha y hora de la primera vez que ingresó.
+  Si es mayor al tiempo máximo (o se superó la
+  cantidad máxima de accesos) el estado hace
+  el cambio que corresponda.
+end note
+
+alt 1.A Cuestionario "En Proceso" que superó el tiempo máximo para completarlo\n(o la cantidad máxima de accesos)
+
+  create participant "estadoIncompleto" as EINC
+  EST --> EINC : <<crear>>
+  EST -> CUES : setEstadoActual(estadoIncompleto)
+  EST -> CUES : setFechaCambioEstado(ahora)
+  EST --> CUES : true
+  CUES --> GCUE : true
+  GCUE -> CDAO : guardar(cuestionario)
+  GCUE --> PANT : false
+  PANT --> Candidato : "Se superó el tiempo máximo para completar el cuestionario"
+  note right of PANT : El CU finaliza
+
+else 1.B Cuestionario "Activo" que superó el tiempo máximo permitido para ese estado
+
+  create participant "estadoSinContestar" as ESC
+  EST --> ESC : <<crear>>
+  EST -> CUES : setEstadoActual(estadoSinContestar)
+  EST -> CUES : setFechaCambioEstado(ahora)
+  EST --> CUES : true
+  CUES --> GCUE : true
+  GCUE -> CDAO : guardar(cuestionario)
+  GCUE --> PANT : false
+  PANT --> Candidato : "Se superó el tiempo máximo permitido para el cuestionario"
+  note right of PANT : El CU finaliza
+
+else El cuestionario está dentro del tiempo permitido
+
+  EST --> CUES : false
+  CUES --> GCUE : false
+  GCUE -> CDAO : guardar(cuestionario)
+  GCUE --> PANT : true
+
+  PANT -> GCUE : obtenerEstado(cuestionarioDTO)
+  GCUE -> CUES : estaEnProceso()
+  CUES --> GCUE : true / false
+  GCUE --> PANT : estado
+
+  alt 1.C El actor ya había ingresado a completar el cuestionario ("En Proceso")
+
+    note right of PANT
+      Se recupera el cuestionario tal cual se generó
+      la primera vez y se posiciona en el primer
+      bloque que todavía no fue respondido.
+      El CU continúa en el paso 5.
+    end note
+
+  else El cuestionario está "Activo" (primer ingreso)
+
+    PANT -> GCUE : obtenerInstrucciones()
+    GCUE --> PANT : instrucciones
+    note right of GCUE
+      Las instrucciones y los parámetros (cantidad de
+      preguntas por bloque, tiempo máximo, cantidad
+      máxima de accesos) se toman del repositorio de
+      configuraciones del sistema.
+    end note
+    PANT --> Candidato : Muestra la pantalla "Cuestionario - Instrucciones"\ncon los botones "Aceptar" y "Cancelar"
+
+    alt 2.A El actor presiona "Cancelar"
+
+      Candidato -> PANT : Presiona "Cancelar"
+      PANT --> Candidato : Cierra la pantalla
+      note right of PANT : El CU termina
+
+    else El actor lee las instrucciones y presiona "Aceptar"
+
+      Candidato -> PANT : Presiona "Aceptar"
+      PANT -> GCUE : iniciarCuestionario(cuestionarioDTO)
+      GCUE -> CUES : getEvaluacion()
+      CUES --> GCUE : evaluacion
+      GCUE -> EVAL : getPuesto()
+      EVAL --> GCUE : puesto
+      GCUE -> PUES : getCompetencias()
+      PUES --> GCUE : competencias
+
+      loop por cada competencia a evaluar
+        GCUE -> COMP : getFactores()
+        COMP --> GCUE : factores
+        loop por cada factor de la competencia
+          GCUE -> FACT : tieneSuficientesPreguntas()
+          FACT --> GCUE : true / false
+          opt el factor tiene al menos 2 preguntas
+            GCUE -> FACT : getPreguntas()
+            FACT --> GCUE : preguntas (con sus opciones de respuesta)
+            GCUE -> GCUE : elegirAlAzar(preguntas, 2)
+          end
+        end
+      end
+
+      GCUE -> GCUE : mezclar(preguntasElegidas)
+
+      loop por cada pregunta elegida
+        create participant "preguntaCuestionario" as PCUE
+        GCUE --> PCUE : <<crear>>(pregunta, nroOrden, nroBloque)
+        GCUE -> CUES : agregarPregunta(preguntaCuestionario)
+      end
+
+      note right of GCUE
+        Se toman 2 preguntas al azar por cada factor
+        (que tenga al menos 2 preguntas) de cada
+        competencia. Las preguntas se mezclan y se
+        agrupan en bloques según el parámetro de
+        cantidad de preguntas por paso.
+      end note
+
+      GCUE -> CUES : setFechaInicio(ahora)
+      create participant "estadoEnProceso" as EPRO
+      GCUE --> EPRO : <<crear>>
+      GCUE -> CUES : setEstadoActual(estadoEnProceso)
+      GCUE -> CDAO : guardar(cuestionario)
+      GCUE --> PANT : ok
+
+    end
+
+  end
+
+  loop mientras queden bloques sin responder
+
+    PANT -> GCUE : obtenerBloque(cuestionarioDTO, nroBloque)
+    GCUE -> CUES : getPreguntasBloque(nroBloque)
+    CUES --> GCUE : preguntasBloque
+    GCUE --> PANT : listaPreguntasDTO
+    PANT --> Candidato : Muestra el paso del wizard con el bloque\nde preguntas y sus opciones de respuesta
+
+    loop mientras el actor no responda todas las preguntas del bloque
+      Candidato -> PANT : Contesta las preguntas y presiona\n"Siguiente" (o "Finalizar" si es el último paso)
+      PANT -> PANT : validarRespuestas()
+      alt 6.A El actor no respondió a todas las preguntas
+        PANT --> Candidato : Muestra qué preguntas no fueron respondidas\n(mantiene el bloque y las respuestas ya cargadas)
+      end
+    end
+
+    PANT -> GCUE : guardarRespuestas(cuestionarioDTO, respuestas)
+    GCUE -> CUES : responder(respuestas)
+    CUES -> EST : responder(cuestionario, respuestas)
+    note right of EST
+      El estado solo valida que se pueda
+      responder ("En Proceso"); no crea
+      las respuestas.
+    end note
+    EST --> CUES : ok
+    loop por cada respuesta del bloque
+      create participant "respuestaCandidata" as RESP
+      CUES --> RESP : <<crear>>(itemOpcion, ponderacion)
+      CUES -> PCUE : setRespuesta(respuestaCandidata)
+    end
+    CUES --> GCUE : ok
+    GCUE -> CDAO : guardar(cuestionario)
+    GCUE --> PANT : ok
+
+    note right of PANT
+      Una vez guardado el bloque el candidato
+      no puede volver a verlo ni modificarlo.
+    end note
+
+    alt 8.A Existen más bloques de preguntas
+      PANT --> Candidato : Presenta la siguiente pantalla del wizard
+    end
+
+  end
+
+  == 8. Es el último paso del wizard ==
+
+  PANT -> GCUE : finalizarCuestionario(cuestionarioDTO)
+  GCUE -> GCUE : calcularPuntajes(cuestionarioDTO)
+
+  loop por cada competencia evaluada
+    create participant "resultadoCompetencia" as RCOM
+    GCUE --> RCOM : <<crear>>(competencia)
+    loop por cada factor de la competencia
+      GCUE -> CUES : getRespuestasFactor(factor)
+      CUES --> GCUE : respuestas
+      create participant "resultadoFactor" as RFAC
+      GCUE --> RFAC : <<crear>>(factor, sumaPonderaciones / 2)
+      GCUE -> RCOM : agregarResultadoFactor(resultadoFactor)
+    end
+    GCUE -> RCOM : setPuntajeObtenido(sumaTotalesFactores / cantFactores)
+    GCUE -> CUES : agregarResultado(resultadoCompetencia)
+  end
+
+  note right of GCUE
+    Algoritmo (3) del CU:
+    total factor = suma de ponderaciones de las
+    opciones elegidas en sus preguntas / 2.
+    total competencia = suma de los totales de sus
+    factores / cantidad de factores evaluados.
+  end note
+
+  GCUE -> CUES : finalizar()
+  CUES -> EST : finalizar(cuestionario)
+  create participant "estadoCompleto" as ECOM
+  EST --> ECOM : <<crear>>
+  EST -> CUES : setEstadoActual(estadoCompleto)
+  EST -> CUES : setFechaFin(ahora)
+  EST --> CUES : ok
+  CUES --> GCUE : ok
+  GCUE -> CDAO : guardar(cuestionario)
+  GCUE --> PANT : ok
+  PANT --> Candidato : "El cuestionario ha sido completado con éxito"
+
+end
+
+@enduml

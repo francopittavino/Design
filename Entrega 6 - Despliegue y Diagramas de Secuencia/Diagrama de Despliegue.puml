@@ -1,0 +1,80 @@
+@startuml DiagramaDespliegue
+!pragma layout smetana
+left to right direction
+skinparam defaultFontSize 12
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam node {
+    BackgroundColor #FFFFFF
+    BorderColor #1F3864
+    FontStyle bold
+}
+skinparam node<<executionEnvironment>> {
+    BackgroundColor #EBF5FB
+    BorderColor #4A7EBB
+}
+skinparam artifact {
+    BackgroundColor #FFF5EB
+    BorderColor #D9822B
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #666666
+}
+
+' Descriptor: tipos de nodos (no instancias concretas)
+
+node "Sistema de Gestión\nde Candidatos y CV" <<device>> as SGC
+
+node "PC del Consultor" <<device>> as PCC {
+  node "Navegador web" <<executionEnvironment>> as NAVC
+}
+
+node "Impresora" <<device>> as IMP
+
+node "PC del Candidato" <<device>> as PCA {
+  node "Navegador web" <<executionEnvironment>> as NAVA
+}
+
+node "Servidor de aplicaciones" <<device>> as SAPP {
+  node "JVM 21" <<executionEnvironment>> as JVM {
+    node "Tomcat 10" <<executionEnvironment>> as TOM {
+      artifact "capital-humano.war" as WAR <<artifact>>
+      artifact "configuracion.properties" as CONF <<artifact>>
+    }
+    artifact "finalizar-cuestionarios.jar" as BAT <<artifact>>
+  }
+}
+
+node "Servidor de BD" <<device>> as SBD {
+  node "PostgreSQL 16" <<executionEnvironment>> as PG {
+    artifact "esquema_capital_humano.sql" as SQL <<artifact>>
+  }
+}
+
+node "Servidor LDAP\nde la organización" <<device>> as LDAP
+node "Servicio externo de IA" <<device>> as IA
+
+note bottom of SGC
+  No se conecta con el servidor: el consultor
+  descarga el CSV de ese sistema y lo importa
+  (CU006), y exporta los resultados en CSV (CU007).
+end note
+
+note left of PCA
+  El candidato responde el cuestionario desde
+  su casa o desde una PC de la consultora
+  (CU001, CU026).
+end note
+
+' Camino de comunicación: protocolo y multiplicidad de cada extremo (origen  destino)
+SGC -- PCC : <<archivo CSV>>\n1          1..*
+IMP -- PCC : <<USB>>\n1          1..*
+PCC -- SAPP : <<HTTPS>>\n1..*          1
+PCA -- SAPP : <<HTTPS>>\n1..*          1
+SAPP -- SBD : <<JDBC>>\n1          1
+SAPP -- LDAP : <<LDAP>>\n1          1
+SAPP -- IA : <<HTTPS>>\n1          1
+
+@enduml

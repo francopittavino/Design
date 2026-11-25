@@ -1,0 +1,146 @@
+@startuml CU028_EmitirOrdenDeMerito
+
+actor Consultor
+boundary "Pantalla\nOrden de Mérito" as PANT
+control "Gestor\nPuestos" as GPUE
+control "Gestor\nReportes" as GREP
+participant "evaluacion" as EVAL
+participant "cuestionario" as CUES
+participant "caracteristicaPuesto" as CARP
+participant "resultadoCompetencia" as RCOM
+database "Puesto\nDAO" as PDAO
+database "Evaluacion\nDAO" as EDAO
+
+Consultor -> PANT : Selecciona la opción "Orden de Méritos" del menú
+PANT --> Consultor : Muestra la pantalla de búsqueda\n(Código, Nombre del Puesto, Empresa)\ncon los botones "Aceptar" y "Cancelar"
+
+alt 2.A El actor presiona "Cancelar"
+
+  Consultor -> PANT : Presiona "Cancelar"
+  PANT --> Consultor : Vuelve a la pantalla principal
+  note right of PANT : El CU termina
+
+else El actor busca el puesto
+
+  Consultor -> PANT : Ingresa al menos un criterio y presiona "Buscar"
+  PANT -> GPUE : buscarPuestos(filtros)
+  GPUE -> PDAO : buscarPorFiltros(filtros)
+  PDAO --> GPUE : puestos
+  GPUE --> PANT : listaPuestosDTO
+  PANT --> Consultor : Muestra la grilla de puestos (Código, Nombre del puesto,\nEmpresa, Candidatos, Evaluaciones Completas)
+
+  Consultor -> PANT : Selecciona un puesto y presiona "Emitir el orden de mérito"
+  PANT -> GREP : buscarEvaluaciones(puestoDTO)
+  GREP -> EDAO : buscarPorPuesto(idPuesto)
+  EDAO --> GREP : evaluaciones
+  GREP --> PANT : listaEvaluacionesDTO
+
+  alt 6.A El puesto no posee evaluaciones
+
+    PANT --> Consultor : "El puesto seleccionado no posee evaluaciones"
+    note right of PANT : El CU continúa en el paso 4\n(vuelve a la grilla de puestos)
+
+  else El puesto posee evaluaciones
+
+    PANT --> Consultor : Solicita que se seleccionen las evaluaciones\n(o la opción TODAS)
+    Consultor -> PANT : Selecciona las evaluaciones (o TODAS) y confirma
+
+    PANT -> GREP : emitirOrdenMerito(puestoDTO, evaluacionesDTO)
+    create participant "ordenMerito" as OM
+    GREP --> OM : <<crear>>(puesto)
+    GREP -> PDAO : buscarCaracteristicas(idPuesto)
+    PDAO --> GREP : caracteristicasPuesto
+    note right of PDAO
+      CaracteristicaPuesto (Puesto-Competencia con
+      ponderación mínima) no tiene DAO propio: se
+      recupera a través de PuestoDAO.
+    end note
+
+    loop por cada evaluación seleccionada
+      GREP -> EVAL : getCuestionarios()
+      EVAL --> GREP : cuestionarios
+
+      loop por cada cuestionario de la evaluación
+        create participant "itemOrdenMerito" as ITEM
+        GREP --> ITEM : <<crear>>(cuestionario)
+        GREP -> CUES : estaCompleto()
+        CUES --> GREP : true / false
+
+        alt El cuestionario está "Completo"
+
+          GREP -> CUES : getResultados()
+          CUES --> GREP : resultadosCompetencia
+          loop por cada competencia requerida para el puesto
+            GREP -> CARP : getPonderacionMinima()
+            CARP --> GREP : ponderacionMinima
+            GREP -> RCOM : superaPonderacionMinima(ponderacionMinima)
+            RCOM --> GREP : true / false
+          end
+          GREP -> ITEM : setPuntajeObtenido(puntaje)
+          GREP -> ITEM : setCumplePonderaciones(true / false)
+          GREP -> ITEM : setFechaInicio(), setFechaFin(), setCantAccesos()
+
+        else El cuestionario no está completo
+
+          GREP -> ITEM : setFechaInicio(), setUltimoAcceso(), setCantAccesos()
+          note right of ITEM
+            No se muestra el puntaje obtenido.
+            Se agrupa por estado del cuestionario.
+          end note
+
+        end
+
+        GREP -> OM : agregarItem(itemOrdenMerito)
+      end
+    end
+
+    GREP -> OM : tieneCuestionariosCompletos()
+    OM --> GREP : true / false
+
+    opt Ningún cuestionario de las evaluaciones seleccionadas está "Completo"
+      GREP --> PANT : sinCuestionariosCompletos
+      PANT --> Consultor : "Ninguna de las evaluaciones seleccionadas tiene\ncuestionarios completos. El orden de mérito no tendrá puntajes."
+      note right of PANT
+        Se emite igual el orden de mérito, solo con
+        los candidatos agrupados por estado.
+      end note
+    end
+
+    GREP -> OM : generar()
+    note right of OM
+      Primero van los candidatos con cuestionario
+      completo que alcanzaron las ponderaciones
+      mínimas de cada competencia, ordenados por
+      puntaje. Después los que no las alcanzaron
+      y por último el resto, agrupados por estado
+      del cuestionario.
+    end note
+    OM --> GREP : ok
+    GREP --> PANT : ordenMerito
+
+    PANT --> Consultor : Muestra el listado (Tipo y Nro de documento, Apellido,\nNombre, Puntaje Obtenido, Datos Adicionales)
+
+    Consultor -> PANT : Presiona "Imprimir"
+    PANT -> GREP : imprimirOrdenMerito(ordenMerito)
+    create participant "exportadorPDF" as EXP
+    GREP --> EXP : <<crear>>
+    GREP -> OM : setFormato(exportadorPDF)
+    GREP -> OM : imprimir()
+    OM -> EXP : exportar(titulo, datos)
+    EXP --> OM : true
+    OM --> GREP : ok
+    GREP --> PANT : ok
+    note right of GREP
+      El gestor elige el formato (PDF) y se lo pasa al
+      reporte. El OrdenMerito no sabe qué exportador
+      usa: solo le delega exportar() (patrón Bridge,
+      Reporte ↔ ExportadorFormato).
+    end note
+    PANT --> Consultor : Envía el listado a la impresora
+    note right of PANT : El CU termina
+
+  end
+
+end
+
+@enduml

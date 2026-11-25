@@ -1,0 +1,166 @@
+@startuml CU021_DarDeAltaPregunta
+title CU021 - Dar de alta Pregunta\nDiagrama de Secuencia - Entrega 5
+
+actor "Consultor" as ACT
+participant ":PantallaGestionPreguntas" as PANT <<boundary>>
+participant ":FormularioPregunta" as FORM <<boundary>>
+participant ":GestorCompetencias" as GCOM <<gestor>>
+participant ":GestorFactores" as GFAC <<gestor>>
+participant ":GestorOpcionesRespuesta" as GOPC <<gestor>>
+participant ":GestorPreguntas" as GPRE <<gestor>>
+participant ":FactorDAO" as FDAO <<dao>>
+participant ":PreguntaDAO" as PDAO <<dao>>
+participant "dto:PreguntaDTO" as DTO <<dto>>
+participant "preg:Pregunta" as PREG <<entidad>>
+participant "pi:PonderacionItem" as PITEM <<entidad>>
+
+== Apertura del formulario (paso 1) ==
+
+ACT -> PANT : presiona el boton "Nuevo"
+activate PANT
+PANT -> FORM : create()
+activate FORM
+
+FORM -> GCOM : buscarCompetencias(null)
+activate GCOM
+GCOM --> FORM : List<CompetenciaDTO>
+deactivate GCOM
+
+FORM -> GOPC : buscarOpciones(null)
+activate GOPC
+GOPC --> FORM : List<OpcionRespuestaDTO>
+deactivate GOPC
+
+FORM --> ACT : [1] muestra el formulario de alta:\nCompetencia, Factor, Nombre de Pregunta,\nPregunta, Descripcion (opcional),\nOpcion de Respuesta\n+ botones "Generar con IA", "Aceptar", "Cancelar"
+
+== Carga asistida de los combos ==
+
+opt el actor selecciona una Competencia
+  ACT -> FORM : seleccionarCompetencia(idCompetencia)
+  FORM -> GFAC : buscarFactores(idCompetencia)
+  activate GFAC
+  GFAC -> FDAO : buscarPorCompetencia(idCompetencia)
+  activate FDAO
+  FDAO --> GFAC : listaFactores
+  deactivate FDAO
+  GFAC --> FORM : List<FactorDTO>
+  deactivate GFAC
+  FORM --> ACT : carga el combo "Factor"
+  note right of FORM
+    Observacion del CU: al seleccionar una Competencia
+    el sistema carga TODOS los Factores de la misma.
+  end note
+end
+
+opt el actor selecciona una Opcion de Respuesta
+  ACT -> FORM : seleccionarOpcionRespuesta(idOpcion)
+  FORM -> GOPC : obtenerItems(idOpcion)
+  activate GOPC
+  GOPC --> FORM : List<ItemOpcionRespuestaDTO>
+  deactivate GOPC
+  FORM --> ACT : muestra la grilla ordenada por Orden:\nOrden (solo lectura), Descripcion (solo lectura),\nPonderacion (editable)
+end
+
+opt [1.A.1] El actor presiona "Generar con IA"
+  ACT -> FORM : generarConIA()
+  ref over FORM, GPRE
+    [1.A.1.2] CU033 - Generar pregunta con Inteligencia Artificial
+  end ref
+  FORM --> ACT : completa los campos con la propuesta generada
+end
+
+opt [1.A.2] El actor presiona "Cancelar"
+  ACT -> FORM : cancelar()
+  FORM --> PANT : cerrar()
+  note right of PANT : [1.A.2.2] el flujo redirige al CU020
+end
+
+== Alta de la pregunta (pasos 2 y 3) ==
+
+loop mientras existan errores de validacion
+
+  ACT -> FORM : [2] presiona "Aceptar"
+  FORM -> DTO : create(idCompetencia, idFactor, nombre,\nenunciado, descripcion, idOpcionRespuesta, ponderaciones)
+  activate DTO
+  deactivate DTO
+
+  FORM -> GPRE : getInstance()
+  FORM -> GPRE : crearPregunta(dto)
+  activate GPRE
+
+  GPRE -> GPRE : validar(dto)
+  activate GPRE
+  note right of GPRE
+    [2.A] campos obligatorios sin completar
+    [2.B] campos que exceden su longitud maxima
+    Observacion: las ponderaciones deben sumar
+    10 puntos y ser siempre 0 o positivas.
+  end note
+  GPRE --> GPRE : listaErrores
+  deactivate GPRE
+
+  GPRE -> PDAO : buscarPorCriterios(idCompetencia, idFactor, nombre)
+  activate PDAO
+  PDAO --> GPRE : listaExistentes
+  deactivate PDAO
+  GPRE -> GPRE : verificarDuplicado(listaExistentes, nombre, enunciado)
+  note right of GPRE
+    [2.C] Observacion (1): la validacion de existencia
+    se realiza tanto sobre el NOMBRE de la pregunta
+    como sobre la PREGUNTA en cuestion.
+  end note
+
+  alt listaErrores NO esta vacia
+
+    GPRE --> FORM : listaErrores
+    FORM --> ACT : [2.A.1 / 2.B.1 / 2.C.1] muestra un mensaje\ndetallando TODAS las omisiones o validaciones\nno superadas, sin tapar campos ni botones
+    note right of ACT : [2.A.3 / 2.B.2 / 2.C.2]\nvuelve al paso 2
+
+  else listaErrores vacia
+
+    GPRE -> FDAO : buscarPorId(idFactor)
+    activate FDAO
+    FDAO --> GPRE : factor
+    deactivate FDAO
+
+    GPRE -> PREG : create(nombre, enunciado, descripcion, factor, opcionRespuesta)
+    activate PREG
+    deactivate PREG
+
+    loop por cada ItemOpcionDeRespuesta de la Opcion seleccionada
+      GPRE -> PITEM : create(valor, itemOpcionDeRespuesta)
+      activate PITEM
+      deactivate PITEM
+      GPRE -> PREG : agregarPonderacion(pi)
+      activate PREG
+      deactivate PREG
+    end
+
+    GPRE -> PDAO : guardar(preg)
+    activate PDAO
+    PDAO --> GPRE : preg (persistida)
+    deactivate PDAO
+
+    GPRE --> FORM : PreguntaDTO
+    FORM --> ACT : [3] "La Pregunta <Nombre Pregunta> se ha creado\ncorrectamente. Desea cargar otra?"\n[4] botones "SI" y "NO"
+
+  end
+  deactivate GPRE
+
+end
+
+== Fin del caso de uso (pasos 5 y 6) ==
+
+alt [5.A] El actor elige "SI"
+  ACT -> FORM : cargarOtra()
+  FORM -> FORM : limpiarCampos()
+  note right of FORM : [5.A.1] el CU vuelve al paso 1\ndel flujo principal
+else [5] El actor elige "NO"
+  ACT -> FORM : finalizar()
+  FORM --> PANT : cerrar()
+  destroy FORM
+  PANT --> ACT : [6] el CU termina y retorna al CU020
+  deactivate PANT
+end
+
+@enduml

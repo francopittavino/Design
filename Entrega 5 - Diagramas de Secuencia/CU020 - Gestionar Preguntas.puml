@@ -1,0 +1,58 @@
+@startuml CU020_GestionarPreguntas
+
+actor Consultor
+boundary "Pantalla\nGestión Preguntas" as PANT
+control "Gestor\nPreguntas" as GES
+database "Pregunta\nDAO" as DAO
+
+Consultor -> PANT : Selecciona la opción "Preguntas" del menú
+PANT --> Consultor : Muestra la pantalla de búsqueda\n(Competencia, Factor y Nombre de Pregunta)
+
+loop mientras el actor no presione "Salir"
+
+  alt El actor presiona "Nuevo" sin haber buscado ninguna pregunta
+
+    Consultor -> PANT : Presiona "Nuevo"
+    note over PANT, DAO : Se invoca el CU021 - Dar de alta Pregunta
+    PANT --> Consultor : Actualiza la grilla
+
+  else El actor ingresa al menos un criterio y presiona "Buscar"
+
+    Consultor -> PANT : Ingresa los criterios y presiona "Buscar"
+    PANT -> GES : buscarPreguntas(filtros)
+
+    loop por cada factor que cumple los filtros
+      GES -> DAO : buscarPorFactor(idFactor)
+      DAO --> GES : preguntas
+    end
+
+    GES --> PANT : listaPreguntasDTO
+    PANT --> Consultor : Muestra la grilla con Competencia,\nFactor y Pregunta
+
+    note right of GES
+      El criterio de búsqueda
+      es "contiene".
+    end note
+
+    alt El actor selecciona una pregunta y presiona "Modificar"
+
+      Consultor -> PANT : Selecciona una pregunta y presiona "Modificar"
+      note over PANT, DAO : Se invoca el CU022 - Modificar Pregunta
+      PANT --> Consultor : Actualiza la grilla
+
+    else El actor selecciona una pregunta y presiona "Eliminar"
+
+      Consultor -> PANT : Selecciona una pregunta y presiona "Eliminar"
+      note over PANT, DAO : Se invoca el CU023 - Dar de baja Pregunta
+      PANT --> Consultor : Actualiza la grilla
+
+    end
+
+  end
+
+end
+
+Consultor -> PANT : Presiona "Salir"
+PANT --> Consultor : Vuelve a la pantalla principal
+
+@enduml

@@ -15,7 +15,15 @@ note over Candidato, PANT
   El candidato ya se autenticó en el CU001
   (tipo y nro de documento + clave).
   El CU001 dejó en la sesión del candidato el
-  cuestionarioDTO, de donde sale el idCuestionario.
+  cuestionarioDTO (GestorAutenticacion.autenticarCandidato
+  devuelve CuestionarioDTO), de donde sale el idCuestionario.
+end note
+
+note over GCUE, CDAO
+  Cada operación del gestor recupera el cuestionario con
+  buscarPorId(cuestionarioDTO.idCuestionario) y, antes de
+  volver, actualiza el cuestionarioDTO (estado, cantBloques,
+  bloqueActual). Para no repetirlo se muestra solo en el paso 1.
 end note
 
 Candidato -> PANT : Ingresa a completar el cuestionario
@@ -72,8 +80,12 @@ else El cuestionario está dentro del tiempo permitido
   GCUE --> PANT : true
 
   PANT -> GCUE : obtenerEstado(cuestionarioDTO)
-  GCUE -> CUES : estaEnProceso()
-  CUES --> GCUE : true / false
+  GCUE -> CUES : getNombreEstado()
+  CUES -> EST : getNombreEstado()
+  EST --> CUES : nombre
+  CUES --> GCUE : nombre
+  GCUE -> CUES : getPrimerBloqueSinResponder()
+  CUES --> GCUE : nroBloque
   GCUE --> PANT : estado
 
   alt 1.C El actor ya había ingresado a completar el cuestionario ("En Proceso")
@@ -81,7 +93,8 @@ else El cuestionario está dentro del tiempo permitido
     note right of PANT
       Se recupera el cuestionario tal cual se generó
       la primera vez y se posiciona en el primer
-      bloque que todavía no fue respondido.
+      bloque que todavía no fue respondido
+      (cuestionarioDTO.bloqueActual).
       El CU continúa en el paso 5.
     end note
 
@@ -121,7 +134,7 @@ else El cuestionario está dentro del tiempo permitido
           GCUE -> FACT : tieneSuficientesPreguntas()
           FACT --> GCUE : true / false
           opt el factor tiene al menos 2 preguntas
-            GCUE -> FACT : getPreguntas()
+            GCUE -> FACT : getPreguntasActivas()
             FACT --> GCUE : preguntas (con sus opciones de respuesta)
             GCUE -> GCUE : elegirAlAzar(preguntas, 2)
           end
@@ -129,6 +142,8 @@ else El cuestionario está dentro del tiempo permitido
       end
 
       GCUE -> GCUE : mezclar(preguntasElegidas)
+      GCUE -> EVAL : getBloqueTamanio()
+      EVAL --> GCUE : preguntasPorBloque
 
       loop por cada pregunta elegida
         create participant "preguntaCuestionario" as PCUE
@@ -148,6 +163,7 @@ else El cuestionario está dentro del tiempo permitido
       create participant "estadoEnProceso" as EPRO
       GCUE --> EPRO : <<crear>>
       GCUE -> CUES : setEstadoActual(estadoEnProceso)
+      GCUE -> CUES : setFechaCambioEstado(ahora)
       GCUE -> CDAO : guardar(cuestionario)
       GCUE --> PANT : ok
 
@@ -172,22 +188,51 @@ else El cuestionario está dentro del tiempo permitido
     end
 
     PANT -> GCUE : guardarRespuestas(cuestionarioDTO, respuestas)
-    GCUE -> CUES : responder(respuestas)
-    CUES -> EST : responder(cuestionario, respuestas)
-    note right of EST
-      El estado solo valida que se pueda
-      responder ("En Proceso"); no crea
-      las respuestas.
+    GCUE -> CUES : superaTiempoMaximo()
+    CUES -> EST : verificarTiempo(cuestionario)
+
+    note right of GCUE
+      Se vuelve a verificar el tiempo antes de guardar:
+      puede vencerse mientras el candidato responde.
+      respuestas: Map<idPreguntaCuestionario, idItemOpcion>.
     end note
-    EST --> CUES : ok
-    loop por cada respuesta del bloque
-      create participant "respuestaCandidata" as RESP
-      CUES --> RESP : <<crear>>(itemOpcion, ponderacion)
-      CUES -> PCUE : setRespuesta(respuestaCandidata)
+
+    alt Se superó el tiempo máximo mientras respondía (1.A)
+
+      create participant "estadoIncompleto" as EINC2
+      EST --> EINC2 : <<crear>>
+      EST -> CUES : setEstadoActual(estadoIncompleto)
+      EST -> CUES : setFechaCambioEstado(ahora)
+      EST --> CUES : true
+      CUES --> GCUE : true
+      GCUE -> CDAO : guardar(cuestionario)
+      GCUE --> PANT : false
+      PANT --> Candidato : "Se superó el tiempo máximo para completar el cuestionario"
+      note right of PANT : El CU finaliza
+
+    else Dentro del tiempo
+
+      EST --> CUES : false
+      CUES --> GCUE : false
+      GCUE -> CUES : responder(respuestas)
+      CUES -> EST : responder(cuestionario, respuestas)
+      note right of EST
+        El estado solo valida que se pueda
+        responder ("En Proceso"); no crea
+        las respuestas.
+      end note
+      EST --> CUES : ok
+      loop por cada respuesta del bloque
+        CUES -> CUES : getPreguntaCuestionario(idPreguntaCuestionario)
+        create participant "respuestaCandidata" as RESP
+        CUES --> RESP : <<crear>>(itemOpcion, ponderacion)
+        CUES -> PCUE : setRespuesta(respuestaCandidata)
+      end
+      CUES --> GCUE : ok
+      GCUE -> CDAO : guardar(cuestionario)
+      GCUE --> PANT : true
+
     end
-    CUES --> GCUE : ok
-    GCUE -> CDAO : guardar(cuestionario)
-    GCUE --> PANT : ok
 
     note right of PANT
       Una vez guardado el bloque el candidato
@@ -203,12 +248,16 @@ else El cuestionario está dentro del tiempo permitido
   == 8. Es el último paso del wizard ==
 
   PANT -> GCUE : finalizarCuestionario(cuestionarioDTO)
-  GCUE -> GCUE : calcularPuntajes(cuestionarioDTO)
+  GCUE -> CUES : getPrimerBloqueSinResponder()
+  CUES --> GCUE : 0 (no quedan bloques sin responder)
+  GCUE -> GCUE : calcularPuntajes(cuestionario)
 
-  loop por cada competencia evaluada
+  loop por cada competencia del puesto
+    GCUE -> CUES : getFactoresEvaluados(competencia)
+    CUES --> GCUE : factores
     create participant "resultadoCompetencia" as RCOM
     GCUE --> RCOM : <<crear>>(competencia)
-    loop por cada factor de la competencia
+    loop por cada factor evaluado de la competencia
       GCUE -> CUES : getRespuestasFactor(factor)
       CUES --> GCUE : respuestas
       create participant "resultadoFactor" as RFAC

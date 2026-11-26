@@ -57,6 +57,15 @@ skinparam class {
     HeaderBackgroundColor<<mediator>> #F8BBD0
 }
 
+note as NotaInfraestructura
+  <b>Clases de infraestructura del código que no se dibujan</b>
+  (no son del dominio ni del diseño lógico):
+  ConexionBD, Catalogo y Mapeos (soporte JDBC de los DAOImpl),
+  Configuracion (lee configuracion.properties),
+  PantallaBase, Modal y FiltroSesion (soporte web de las pantallas),
+  ValidacionException, DatosException y ServicioExternoException.
+end note
+
 ' ============================================================
 ' ENUMERACIONES
 ' ============================================================
@@ -93,7 +102,19 @@ class CandidatoCuestionarioDTO <<dto>> {
 - nroCandidato : String
 - apellido : String
 - nombre : String
+- tipoDoc : String
+- nroDoc : String
 - token : String
++ getters()
++ setters()
+}
+class CuestionarioDTO <<dto>> {
+- idCuestionario : int
+- estado : String
+- puesto : String
+- cantBloques : int
+- bloqueActual : int
+- candidato : CandidatoCuestionarioDTO
 + getters()
 + setters()
 }
@@ -122,8 +143,15 @@ class PuestoDTO <<dto>> {
 - empresa : String
 - cantCandidatos : int
 - cantEvaluacionesCompletas : int
+- caracteristicas : List<CaracteristicaPuestoDTO>
 + getters()
 + setters()
+}
+class CaracteristicaPuestoDTO <<dto>> {
+- competencia : String
+- ponderacionMinima : double
+- evaluable : bool
++ getters()
 }
 class CompetenciaDTO <<dto>> {
 - id : int
@@ -143,7 +171,14 @@ class PreguntaDTO <<dto>> {
 - id : int
 - nombre : String
 - enunciado : String
+- descripcion : String
 - opciones : List<OpcionRespuestaDTO>
+- idCompetencia : int
+- competencia : String
+- idFactor : int
+- factor : String
+- idOpcionRespuesta : int
+- ponderaciones : Map<Integer, String>
 + getters()
 + setters()
 }
@@ -153,11 +188,20 @@ class OpcionRespuestaDTO <<dto>> {
 + getters()
 + setters()
 }
+class ItemOpcionRespuestaDTO <<dto>> {
+- id : int
+- orden : int
+- descripcion : String
++ getters()
+}
 class EvaluacionDTO <<dto>> {
 - id : int
 - candidato : String
 - puesto : String
 - estado : String
+- fechaCreacion : DateTime
+- cantCandidatos : int
+- cantCompletos : int
 + getters()
 + setters()
 }
@@ -174,8 +218,8 @@ interface IImportadorCandidatos <<interfaz>> {
 + validarFormato(rutaArchivo: String) : bool
 }
 interface IExportadorResultados <<interfaz>> {
-+ exportarCSV(puesto: Puesto, ruta: String) : bool
-+ exportarExcel(candidatos: List, ruta: String) : bool
++ exportarCSV(puesto: Puesto, salida: OutputStream) : bool
++ exportarExcel(titulo: String, candidatos: List<CandidatoCuestionarioDTO>, salida: OutputStream) : bool
 }
 interface IServicioIA <<interfaz>> {
 + generarPregunta(competencia: Competencia, factor: Factor) : Pregunta
@@ -191,7 +235,7 @@ class ServiciosExternosFacade <<facade>> {
 + autenticarConsultor(usr: String, pass: String) : Consultor
 + generarPreguntaIA(comp: Competencia, factor: Factor) : Pregunta
 + importarCandidatos(ruta: String) : ResultadoImport
-+ exportarResultados(puesto: Puesto, formato: String, ruta: String) : bool
++ exportarResultados(titulo: String, formato: String, candidatos: List<CandidatoCuestionarioDTO>, salida: OutputStream) : bool
 }
 
 ServiciosExternosFacade ..> IAutenticacionLDAP : usa
@@ -199,21 +243,63 @@ ServiciosExternosFacade ..> IServicioIA : usa
 ServiciosExternosFacade ..> IImportadorCandidatos : usa
 ServiciosExternosFacade ..> IExportadorResultados : usa
 
+' Implementaciones de los subsistemas externos usadas en el TP
+class AutenticacionLDAPSimulada <<facade>> implements IAutenticacionLDAP {
+- consultorDAO : ConsultorDAO
+--
++ autenticar(usuario: String, password: String) : Consultor
++ validarSesion(token: String) : bool
+}
+class ServicioIANoDisponible <<facade>> implements IServicioIA {
++ generarPregunta(competencia: Competencia, factor: Factor) : Pregunta
++ generarPuesto(nombre: String) : Puesto
+}
+class ImportadorCandidatosNoImplementado <<facade>> implements IImportadorCandidatos {
++ importar(rutaArchivo: String) : ResultadoImport
++ validarFormato(rutaArchivo: String) : bool
+}
+class ExportadorResultadosArchivo <<facade>> implements IExportadorResultados {
++ exportarCSV(puesto: Puesto, salida: OutputStream) : bool
++ exportarExcel(titulo: String, candidatos: List<CandidatoCuestionarioDTO>, salida: OutputStream) : bool
+}
+note bottom of ServicioIANoDisponible
+  El LDAP está simulado contra la tabla de consultores y
+  el servicio de IA siempre responde "no disponible"
+  (lanza ServicioExternoException, mensaje del CU021).
+  El importador (CU006) y exportarCSV (CU007) están fuera
+  del alcance de las Etapas 7 y 8.
+end note
+AutenticacionLDAPSimulada ..> ConsultorDAO : usa
+
 ' ============================================================
 ' PATRÓN BRIDGE (Jerarquía de Reportes y Formatos)
 ' ============================================================
 interface ExportadorFormato <<interfaz>> <<bridge>> {
-+ exportar(titulo: String, datos: Map) : bool
++ exportar(titulo: String, datos: Map<String, List<List<String>>>) : bool
 }
 class ExportadorCSV <<bridge>> implements ExportadorFormato {
-+ exportar(titulo: String, datos: Map) : bool
+- salida : OutputStream
+--
++ ExportadorCSV(salida: OutputStream)
++ exportar(titulo: String, datos: Map<String, List<List<String>>>) : bool
 }
 class ExportadorExcel <<bridge>> implements ExportadorFormato {
-+ exportar(titulo: String, datos: Map) : bool
+- salida : OutputStream
+--
++ ExportadorExcel(salida: OutputStream)
++ exportar(titulo: String, datos: Map<String, List<List<String>>>) : bool
 }
 class ExportadorPDF <<bridge>> implements ExportadorFormato {
-+ exportar(titulo: String, datos: Map) : bool
+- salida : OutputStream
+--
++ ExportadorPDF(salida: OutputStream)
++ exportar(titulo: String, datos: Map<String, List<List<String>>>) : bool
 }
+note bottom of ExportadorFormato
+  Cada exportador escribe en el OutputStream que recibe al crearse
+  (en la web, la respuesta HTTP: el usuario descarga el archivo
+  y elige dónde guardarlo).
+end note
 
 abstract class Reporte <<entidad>> <<bridge>> {
 # formatoExportacion : ExportadorFormato
@@ -229,16 +315,18 @@ class ReporteComparativo <<entidad>> <<bridge>> extends Reporte {
 --
 + generar() : void
 + getDatosGrafico() : Map
-+ imprimir() : void
++ imprimir() : bool
 }
 
 class OrdenMerito <<entidad>> <<bridge>> extends Reporte {
 - puesto : Puesto
+- descripcionEvaluaciones : String
 --
++ setDescripcionEvaluaciones(d: String) : void
 + generar() : void
 + agregarItem(item: ItemOrdenMerito) : void
 + tieneCuestionariosCompletos() : bool
-+ imprimir() : void
++ imprimir() : bool
 }
 
 Reporte "1" o-- "1" ExportadorFormato : formatoExportacion
@@ -247,40 +335,41 @@ Reporte "1" o-- "1" ExportadorFormato : formatoExportacion
 ' PATRÓN STATE (Ciclo de Vida de Cuestionario)
 ' ============================================================
 interface EstadoCuestionarioState <<interfaz>> <<state>> {
-+ responder(c: Cuestionario, resp: List) : void
++ responder(c: Cuestionario, resp: Map<Integer, Integer>) : void
 + finalizar(c: Cuestionario) : void
 + verificarTiempo(c: Cuestionario) : bool
 + getNombreEstado() : String
++ {static} desdeNombre(nombre: String) : EstadoCuestionarioState
 }
 
 class EstadoActivo <<entidad>> <<state>> implements EstadoCuestionarioState {
-+ responder(c: Cuestionario, resp: List) : void
++ responder(c: Cuestionario, resp: Map<Integer, Integer>) : void
 + finalizar(c: Cuestionario) : void
 + verificarTiempo(c: Cuestionario) : bool
 + getNombreEstado() : String
 }
 class EstadoEnProceso <<entidad>> <<state>> implements EstadoCuestionarioState {
-+ responder(c: Cuestionario, resp: List) : void
++ responder(c: Cuestionario, resp: Map<Integer, Integer>) : void
 + finalizar(c: Cuestionario) : void
 + verificarTiempo(c: Cuestionario) : bool
 + getNombreEstado() : String
 }
-class EstadoCompleto <<entidad>> <<state>> implements EstadoCuestionarioState {
-+ responder(c: Cuestionario, resp: List) : void
+abstract class EstadoFinal <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: Map<Integer, Integer>) : void
 + finalizar(c: Cuestionario) : void
 + verificarTiempo(c: Cuestionario) : bool
+}
+note bottom of EstadoFinal
+  Completo, Incompleto y Sin Contestar comparten el comportamiento:
+  no se puede responder ni finalizar, y el tiempo ya no corre.
+end note
+class EstadoCompleto <<entidad>> <<state>> extends EstadoFinal {
 + getNombreEstado() : String
 }
-class EstadoIncompleto <<entidad>> <<state>> implements EstadoCuestionarioState {
-+ responder(c: Cuestionario, resp: List) : void
-+ finalizar(c: Cuestionario) : void
-+ verificarTiempo(c: Cuestionario) : bool
+class EstadoIncompleto <<entidad>> <<state>> extends EstadoFinal {
 + getNombreEstado() : String
 }
-class EstadoSinContestar <<entidad>> <<state>> implements EstadoCuestionarioState {
-+ responder(c: Cuestionario, resp: List) : void
-+ finalizar(c: Cuestionario) : void
-+ verificarTiempo(c: Cuestionario) : bool
+class EstadoSinContestar <<entidad>> <<state>> extends EstadoFinal {
 + getNombreEstado() : String
 }
 
@@ -301,12 +390,14 @@ CandidatoDAO <|.. CandidatoDAOImpl
 
 interface PuestoDAO <<interfaz>> <<dao>> {
 + buscarPorId(id: int) : Puesto
-+ buscarPorFiltros(filtros: Map) : List<Puesto>
++ buscarPorFiltros(filtros: Map<String, String>) : List<Puesto>
 + guardar(puesto: Puesto) : void
 + actualizar(puesto: Puesto) : void
 + eliminarLogico(id: int) : void
 + buscarCaracteristicas(idPuesto: int) : List<CaracteristicaPuesto>
 + existePuestoConCompetencia(idCompetencia: int) : bool
++ contarCandidatos(idPuesto: int) : int
++ contarEvaluacionesCompletas(idPuesto: int) : int
 }
 note bottom of PuestoDAO
   CaracteristicaPuesto es la relación N:M Puesto-Competencia
@@ -331,6 +422,7 @@ CompetenciaDAO <|.. CompetenciaDAOImpl
 interface FactorDAO <<interfaz>> <<dao>> {
 + buscarPorId(id: int) : Factor
 + buscarPorCompetencia(idComp: int) : List<Factor>
++ listarTodos() : List<Factor>
 + guardar(factor: Factor) : void
 + actualizar(factor: Factor) : void
 + eliminarLogico(id: int) : void
@@ -341,6 +433,7 @@ FactorDAO <|.. FactorDAOImpl
 interface PreguntaDAO <<interfaz>> <<dao>> {
 + buscarPorId(id: int) : Pregunta
 + buscarPorFactor(idFactor: int) : List<Pregunta>
++ buscarPorCriterios(idCompetencia: int, idFactor: int, nombre: String) : List<Pregunta>
 + guardar(pregunta: Pregunta) : void
 + actualizar(pregunta: Pregunta) : void
 + eliminarLogico(id: int) : void
@@ -382,6 +475,12 @@ interface EvaluacionDAO <<interfaz>> <<dao>> {
 }
 class EvaluacionDAOImpl <<dao>> {}
 EvaluacionDAO <|.. EvaluacionDAOImpl
+
+interface ConsultorDAO <<interfaz>> <<dao>> {
++ buscarPorUsuario(usuario: String) : Consultor
+}
+class ConsultorDAOImpl <<dao>> {}
+ConsultorDAO <|.. ConsultorDAOImpl
 
 interface RegistroAuditoriaDAO <<interfaz>> <<dao>> {
 + guardar(registro: RegistroAuditoria) : void
@@ -472,6 +571,7 @@ class Factor <<entidad>> {
 --
 + puedeEliminarse() : bool
 + tieneSuficientesPreguntas() : bool
++ getPreguntasActivas() : List<Pregunta>
 }
 class OpcionDeRespuesta <<entidad>> {
 - id : int
@@ -496,6 +596,7 @@ class Pregunta <<entidad>> {
 - fechaBaja : Date
 --
 + puedeEliminarse() : bool
++ agregarPonderacion(pi: PonderacionItem) : void
 }
 class PonderacionItem <<entidad>> {
 - id : int
@@ -506,7 +607,7 @@ class Evaluacion <<entidad>> {
 - fechaCreacion : DateTime
 - bloqueTamanio : int
 --
-+ crearCuestionarios() : void
++ crearCuestionarios(clavesPorCandidato: Map<Candidato, String>, tiempoMax: int, accesosMaximos: int) : void
 }
 class Cuestionario <<entidad>> {
 - id : int
@@ -518,8 +619,9 @@ class Cuestionario <<entidad>> {
 - fechaUltimoAcceso : DateTime
 - cantAccesos : int
 - tiempoMax : int
+- accesosMaximos : int
 --
-+ responder(resp: List) : void
++ responder(resp: Map<Integer, Integer>) : void
 + finalizar() : void
 + estaActivo() : bool
 + estaEnProceso() : bool
@@ -527,12 +629,19 @@ class Cuestionario <<entidad>> {
 + registrarAcceso() : void
 + superaTiempoMaximo() : bool
 + setEstadoActual(estado: EstadoCuestionarioState) : void
++ getNombreEstado() : String
 + getEvaluacion() : Evaluacion
 + agregarPregunta(pc: PreguntaCuestionario) : void
++ getPreguntaCuestionario(idPreguntaCuest: int) : PreguntaCuestionario
 + getPreguntasBloque(nro: int) : List<PreguntaCuestionario>
++ getCantBloques() : int
++ getPrimerBloqueSinResponder() : int
 + getRespuestasFactor(f: Factor) : List<RespuestaCandidata>
++ getFactoresEvaluados(c: Competencia) : List<Factor>
 + agregarResultado(rc: ResultadoCompetencia) : void
++ getResultado(c: Competencia) : ResultadoCompetencia
 + getResultados() : List<ResultadoCompetencia>
++ getPuntajeTotal() : double
 }
 class PreguntaCuestionario <<entidad>> {
 - id : int
@@ -581,13 +690,8 @@ class RegistroEjecucionBatch <<entidad>> {
 }
 
 ' ============================================================
-' PATRÓN MEDIATOR & SINGLETON (Gestores de Lógica)
+' PATRÓN SINGLETON (Gestores de Lógica)
 ' ============================================================
-interface ICuestionarioMediator <<interfaz>> <<mediator>> {
-+ notificarRespuesta(cuestionario: Cuestionario, pregunta: PreguntaCuestionario, respuesta: RespuestaCandidata) : void
-+ notificarCambioEstado(cuestionario: Cuestionario, nuevoEstado: EstadoCuestionarioState) : void
-}
-
 class GestorAutenticacion <<gestor>> <<singleton>> {
 - {static} instance : GestorAutenticacion
 - serviciosFacade : ServiciosExternosFacade
@@ -595,8 +699,8 @@ class GestorAutenticacion <<gestor>> <<singleton>> {
 - cuestionarioDAO : CuestionarioDAO
 --
 + {static} getInstance() : GestorAutenticacion
-+ autenticarConsultor(usuario: String, password: String) : boolean
-+ autenticarCandidato(tipoDoc: String, nroDoc: String, clave: String) : CandidatoCuestionarioDTO
++ autenticarConsultor(usuario: String, password: String) : Consultor
++ autenticarCandidato(tipoDoc: String, nroDoc: String, clave: String) : CuestionarioDTO
 + cerrarSesion() : void
 }
 class GestorPuestos <<gestor>> <<singleton>> {
@@ -606,7 +710,8 @@ class GestorPuestos <<gestor>> <<singleton>> {
 - serviciosFacade : ServiciosExternosFacade
 --
 + {static} getInstance() : GestorPuestos
-+ buscarPuestos(filtros: Map) : List<PuestoDTO>
++ buscarPuestos(filtros: Map<String, String>) : List<PuestoDTO>
++ obtenerDetalle(idPuesto: int) : PuestoDTO
 + crearPuesto(datos: PuestoDTO) : PuestoDTO
 + modificarPuesto(id: int, datos: PuestoDTO) : PuestoDTO
 + darDeBajaPuesto(id: int) : void
@@ -633,7 +738,7 @@ class GestorFactores <<gestor>> <<singleton>> {
 - auditoriaDAO : RegistroAuditoriaDAO
 --
 + {static} getInstance() : GestorFactores
-+ buscarFactores(filtros: Map) : List<FactorDTO>
++ buscarFactores(filtros: Map<String, Integer>) : List<FactorDTO>
 + crearFactor(datos: FactorDTO) : FactorDTO
 + modificarFactor(id: int, datos: FactorDTO) : FactorDTO
 + darDeBajaFactor(id: int) : void
@@ -642,15 +747,17 @@ class GestorFactores <<gestor>> <<singleton>> {
 class GestorPreguntas <<gestor>> <<singleton>> {
 - {static} instance : GestorPreguntas
 - preguntaDAO : PreguntaDAO
+- factorDAO : FactorDAO
+- opcionDAO : OpcionRespuestaDAO
 - auditoriaDAO : RegistroAuditoriaDAO
 - serviciosFacade : ServiciosExternosFacade
 --
 + {static} getInstance() : GestorPreguntas
-+ buscarPreguntas(filtros: Map) : List<PreguntaDTO>
-+ crearPregunta(datos: PreguntaDTO) : PreguntaDTO
++ buscarPreguntas(filtros: Map<String, String>) : List<PreguntaDTO>
++ crearPregunta(datos: PreguntaDTO, usuario: String) : PreguntaDTO
 + modificarPregunta(id: int, datos: PreguntaDTO) : PreguntaDTO
 + darDeBajaPregunta(id: int) : void
-+ generarConIA(comp: CompetenciaDTO, factor: FactorDTO) : PreguntaDTO
++ generarConIA(idCompetencia: int, idFactor: int) : PreguntaDTO
 + validar(p: PreguntaDTO) : List<String>
 }
 class GestorOpcionesRespuesta <<gestor>> <<singleton>> {
@@ -661,6 +768,7 @@ class GestorOpcionesRespuesta <<gestor>> <<singleton>> {
 --
 + {static} getInstance() : GestorOpcionesRespuesta
 + buscarOpciones(nombre: String) : List<OpcionRespuestaDTO>
++ obtenerItems(idOpcion: int) : List<ItemOpcionRespuestaDTO>
 + crearOpcion(datos: OpcionRespuestaDTO) : OpcionRespuestaDTO
 + modificarOpcion(id: int, datos: OpcionRespuestaDTO) : OpcionRespuestaDTO
 + darDeBajaOpcion(id: int) : void
@@ -672,41 +780,47 @@ class GestorCandidatos <<gestor>> <<singleton>> {
 - serviciosFacade : ServiciosExternosFacade
 --
 + {static} getInstance() : GestorCandidatos
-+ buscarCandidatos(filtros: Map) : List<CandidatoGestionDTO>
++ buscarCandidatos(filtros: Map<String, String>) : List<CandidatoGestionDTO>
 + importarCandidatos(archivoCsv: String) : ResultadoImportacionDTO
-+ evaluarCandidatos(nrosCandidatos: List, puesto: PuestoDTO) : List<CandidatoGestionDTO>
++ verificarCuestionariosActivos(nrosCandidatos: List<String>) : List<CandidatoGestionDTO>
 }
 class GestorEvaluacion <<gestor>> <<singleton>> {
 - {static} instance : GestorEvaluacion
 - evaluacionDAO : EvaluacionDAO
+- puestoDAO : PuestoDAO
+- candidatoDAO : CandidatoDAO
 - serviciosFacade : ServiciosExternosFacade
 --
 + {static} getInstance() : GestorEvaluacion
-+ evaluarCandidatos(candidatos: List<CandidatoGestionDTO>, puesto: PuestoDTO) : EvaluacionDTO
-+ generarCuestionarios(eval: EvaluacionDTO) : List<CandidatoCuestionarioDTO>
-+ exportarClaves(eval: EvaluacionDTO, ruta: String) : bool
-+ exportarResultados(puesto: PuestoDTO, ruta: String) : bool
 + validarCompetenciasEvaluables(puesto: PuestoDTO) : bool
++ competenciasNoEvaluables(puesto: PuestoDTO) : List<String>
++ generarClaves(candidatos: List<CandidatoGestionDTO>) : List<CandidatoCuestionarioDTO>
++ evaluarCandidatos(candidatos: List<CandidatoCuestionarioDTO>, puesto: PuestoDTO, consultor: Consultor) : EvaluacionDTO
++ nombreArchivoClaves(eval: EvaluacionDTO) : String
++ exportarClaves(eval: EvaluacionDTO, candidatos: List<CandidatoCuestionarioDTO>, salida: OutputStream) : bool
++ exportarResultados(puesto: PuestoDTO, salida: OutputStream) : bool
 }
-class GestorCuestionario <<gestor>> <<singleton>> <<mediator>> implements ICuestionarioMediator {
+class GestorCuestionario <<gestor>> <<singleton>> {
 - {static} instance : GestorCuestionario
 - cuestionarioDAO : CuestionarioDAO
 --
 + {static} getInstance() : GestorCuestionario
-+ notificarRespuesta(cuestionario: Cuestionario, pregunta: PreguntaCuestionario, respuesta: RespuestaCandidata) : void
-+ notificarCambioEstado(cuestionario: Cuestionario, nuevoEstado: EstadoCuestionarioState) : void
-+ obtenerDatosCandidato(claveAcceso: String) : CandidatoCuestionarioDTO
-+ obtenerBloque(cuest: EvaluacionDTO, nro: int) : List<PreguntaDTO>
-+ guardarRespuestas(cuest: EvaluacionDTO, resp: List) : void
-+ finalizarCuestionario(cuest: EvaluacionDTO) : void
-+ calcularPuntajes(cuest: EvaluacionDTO) : void
-+ verificarTiempo(cuest: EvaluacionDTO) : bool
-+ obtenerEstado(cuest: EvaluacionDTO) : String
++ verificarTiempo(cuest: CuestionarioDTO) : bool
++ obtenerEstado(cuest: CuestionarioDTO) : String
 + obtenerInstrucciones() : String
-+ iniciarCuestionario(cuest: EvaluacionDTO) : void
++ iniciarCuestionario(cuest: CuestionarioDTO) : void
++ obtenerBloque(cuest: CuestionarioDTO, nro: int) : List<PreguntaDTO>
++ guardarRespuestas(cuest: CuestionarioDTO, resp: Map<Integer, Integer>) : bool
++ finalizarCuestionario(cuest: CuestionarioDTO) : void
+~ calcularPuntajes(c: Cuestionario) : void
 - elegirAlAzar(preguntas: List<Pregunta>, cant: int) : List<Pregunta>
 - mezclar(preguntas: List<Pregunta>) : List<Pregunta>
 }
+note bottom of GestorCuestionario
+  guardarRespuestas vuelve a verificar el tiempo antes de guardar
+  (puede vencerse mientras el candidato responde) y devuelve false
+  si el cuestionario pasó a Incompleto.
+end note
 class GestorReportes <<gestor>> <<singleton>> {
 - {static} instance : GestorReportes
 - cuestionarioDAO : CuestionarioDAO
@@ -717,7 +831,7 @@ class GestorReportes <<gestor>> <<singleton>> {
 + emitirReporteComparativo(nroCandidato: String, puesto: PuestoDTO) : ResultadoComparativoDTO
 + buscarEvaluaciones(puesto: PuestoDTO) : List<EvaluacionDTO>
 + emitirOrdenMerito(puesto: PuestoDTO, evaluaciones: List<EvaluacionDTO>) : OrdenMerito
-+ imprimirOrdenMerito(om: OrdenMerito) : void
++ imprimirOrdenMerito(om: OrdenMerito, salida: OutputStream) : bool
 }
 class GestorFinalizacion <<gestor>> <<singleton>> {
 - {static} instance : GestorFinalizacion
@@ -817,6 +931,10 @@ GestorOpcionesRespuesta ..> RegistroAuditoriaDAO : usa
 GestorOpcionesRespuesta ..> PreguntaDAO : usa (opción en uso)
 GestorCandidatos ..> CandidatoDAO : usa
 GestorEvaluacion ..> EvaluacionDAO : usa
+GestorEvaluacion ..> PuestoDAO : usa
+GestorEvaluacion ..> CandidatoDAO : usa
+GestorPreguntas ..> FactorDAO : usa
+GestorPreguntas ..> OpcionRespuestaDAO : usa
 GestorCuestionario ..> CuestionarioDAO : usa
 GestorReportes ..> EvaluacionDAO : usa
 GestorReportes ..> CuestionarioDAO : usa
@@ -846,7 +964,14 @@ GestorReportes ..> ReporteComparativo : arma
 ' ============================================================
 GestorCandidatos ..> CandidatoGestionDTO : arma / recibe
 GestorCandidatos ..> ResultadoImportacionDTO : arma
-GestorCuestionario ..> CandidatoCuestionarioDTO : arma
+GestorCuestionario ..> CuestionarioDTO : arma / recibe
+GestorAutenticacion ..> CuestionarioDTO : arma
+CuestionarioDTO --> CandidatoCuestionarioDTO
+GestorEvaluacion ..> CandidatoCuestionarioDTO : arma
+GestorPuestos ..> CaracteristicaPuestoDTO : arma
+PuestoDTO --> CaracteristicaPuestoDTO
+GestorOpcionesRespuesta ..> ItemOpcionRespuestaDTO : arma
+GestorCuestionario ..> PreguntaDTO : arma
 GestorReportes ..> ResultadoComparativoDTO : arma
 GestorPuestos ..> PuestoDTO : arma / recibe
 GestorCompetencias ..> CompetenciaDTO : arma / recibe
@@ -869,6 +994,7 @@ OpcionRespuestaDAO ..> OpcionDeRespuesta : usa
 CuestionarioDAO ..> Cuestionario : usa
 EvaluacionDAO ..> Evaluacion : usa
 RegistroAuditoriaDAO ..> RegistroAuditoria : usa
+ConsultorDAO ..> Consultor : usa
 RegistroEjecucionBatchDAO ..> RegistroEjecucionBatch : usa
 
 ' ============================================================
@@ -912,7 +1038,10 @@ PantallaMenuPrincipal --> PantallaOrdenMerito : abre >
 ' RELACIONES BOUNDARIES -> DTOs
 ' ============================================================
 PantallaEvaluarCandidatos ..> CandidatoGestionDTO
-PantallaCompletarCuestionario ..> CandidatoCuestionarioDTO
+PantallaCompletarCuestionario ..> CuestionarioDTO
+PantallaLogin ..> CuestionarioDTO
+PantallaEvaluarCandidatos ..> CandidatoCuestionarioDTO
+FormularioPregunta ..> ItemOpcionRespuestaDTO
 PantallaImportarCandidatos ..> ResultadoImportacionDTO
 PantallaReporteComparativo ..> ResultadoComparativoDTO
 FormularioPuesto ..> PuestoDTO

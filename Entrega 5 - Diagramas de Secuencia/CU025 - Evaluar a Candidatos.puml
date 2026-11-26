@@ -39,11 +39,12 @@ loop mientras el actor no presione "Siguiente"
 end
 
 Consultor -> PANT : Presiona "Siguiente"
-PANT -> GCAN : evaluarCandidatos(nrosCandidatos, null)
+PANT -> GCAN : verificarCuestionariosActivos(nrosCandidatos)
 
 note right of GCAN
-  Todavía no se eligió el puesto,
-  por eso se pasa null.
+  Solo verifica que nadie tenga un cuestionario
+  activo o en proceso. La evaluación la crea
+  GestorEvaluacion.evaluarCandidatos al finalizar.
 end note
 
 loop por cada candidato a evaluar
@@ -53,7 +54,7 @@ loop por cada candidato a evaluar
   CAND --> GCAN : true / false
 end
 
-GCAN --> PANT : listaCandidatosDTO
+GCAN --> PANT : candidatos con cuestionario activo (vacía = ninguno)
 
 alt Existen candidatos con cuestionarios activos o en proceso
 
@@ -74,6 +75,10 @@ loop mientras no se seleccione una función
 
   alt El actor selecciona la función o puesto
     Consultor -> PANT : Selecciona la función o puesto
+    PANT -> GPUE : obtenerDetalle(idPuesto)
+    GPUE -> PDAO : buscarPorId(idPuesto)
+    PDAO --> GPUE : puesto
+    GPUE --> PANT : puestoDTO (con caracteristicas)
     PANT --> Consultor : Muestra la función, la empresa y las competencias\ncon su ponderación requerida
   else El actor presiona "Siguiente" sin seleccionar una función
     Consultor -> PANT : Presiona "Siguiente"
@@ -84,6 +89,8 @@ end
 
 Consultor -> PANT : Presiona "Siguiente"
 PANT -> GEVA : validarCompetenciasEvaluables(puestoDTO)
+GEVA -> PDAO : buscarPorId(idPuesto)
+PDAO --> GEVA : puesto
 GEVA -> PUES : todasCompetenciasEvaluables()
 PUES --> GEVA : true / false
 GEVA --> PANT : true / false
@@ -96,19 +103,24 @@ end note
 
 alt Alguna competencia del puesto no puede ser evaluada
 
+  PANT -> GEVA : competenciasNoEvaluables(puestoDTO)
+  GEVA --> PANT : nombres de las competencias
   PANT --> Consultor : Muestra las competencias que no pueden ser evaluadas
   Consultor -> PANT : Presiona "Aceptar"
   PANT --> Consultor : Vuelve a la pantalla principal
 
 else Todas las competencias pueden ser evaluadas
 
-  PANT -> GEVA : generarCuestionarios(evaluacionDTO)
-  GEVA --> PANT : listaCuestionariosDTO
+  PANT -> GEVA : generarClaves(candidatosGestionDTO)
+  GEVA --> PANT : listaCandidatoCuestionarioDTO (con su clave)
   PANT --> Consultor : Muestra los candidatos a evaluar (Apellido, Nombre,\nTipo y Nro de documento, Clave de ingreso)
 
   note right of GEVA
-    Las claves se generan al azar, con letras
-    y dígitos, y tienen 8 caracteres.
+    Solo se generan las claves (8 caracteres al
+    azar, con letras y dígitos) para mostrarlas.
+    No se crea ningún cuestionario ni se guarda
+    nada: los cuestionarios se crean una sola vez,
+    en crearCuestionarios, al presionar "Finalizar".
   end note
 
   alt El actor presiona "Cancelar"
@@ -119,14 +131,32 @@ else Todas las competencias pueden ser evaluadas
   else El actor presiona "Finalizar"
 
     Consultor -> PANT : Presiona "Finalizar"
-    PANT -> GEVA : evaluarCandidatos(candidatos, puestoDTO)
+    PANT -> GEVA : evaluarCandidatos(listaCandidatoCuestionarioDTO, puestoDTO, consultor)
+    GEVA -> PDAO : buscarPorId(idPuesto)
+    PDAO --> GEVA : puesto
+
+    loop por cada candidato a evaluar
+      GEVA -> CDAO : buscarPorNroCandidato(nro)
+      CDAO --> GEVA : candidato
+      GEVA -> CAND : tieneCuestionarioActivo()
+      CAND --> GEVA : false
+    end
+
+    note right of GEVA
+      Se vuelve a verificar que nadie tenga un
+      cuestionario activo (otro consultor pudo
+      evaluarlo mientras tanto).
+    end note
+
     create participant "evaluacion" as EVAL
-    GEVA --> EVAL : <<crear>>
-    GEVA -> EVAL : crearCuestionarios()
+    GEVA --> EVAL : <<crear>>(puesto, consultor, bloqueTamanio)
+    GEVA -> EVAL : crearCuestionarios(clavesPorCandidato, tiempoMax, accesosMaximos)
 
     note right of EVAL
-      Todos los cuestionarios salen del mismo
-      modelo y se crean en estado "Activo".
+      Todos los cuestionarios salen de la misma
+      evaluación y se crean en estado "Activo".
+      tiempoMax, accesosMaximos y bloqueTamanio
+      salen de configuracion.properties.
     end note
 
     GEVA -> EDAO : guardar(evaluacion)
@@ -142,24 +172,32 @@ else Todas las competencias pueden ser evaluadas
       loop mientras el actor no presione "Guardar"
 
         Consultor -> PANT : Selecciona "Sí"
-        PANT --> Consultor : Muestra la pantalla para elegir la carpeta
+        PANT -> GEVA : nombreArchivoClaves(evaluacionDTO)
+        GEVA --> PANT : nombre del archivo
+        PANT --> Consultor : Muestra la pantalla para guardar el archivo
+
+        note right of GEVA
+          Nombre del archivo:
+          aaaa-mm-dd-hh-mm-NombreFunción.xls
+        end note
 
         alt El actor presiona "Cancelar"
           Consultor -> PANT : Presiona "Cancelar"
           PANT --> Consultor : Vuelve a preguntar si desea exportar
-        else El actor selecciona la carpeta y presiona "Guardar"
-          Consultor -> PANT : Selecciona la carpeta y presiona "Guardar"
-          PANT -> GEVA : exportarClaves(evaluacionDTO, ruta)
-          GEVA -> FAC : exportarResultados(puesto, "EXCEL", ruta)
-          FAC -> EXP : exportarExcel(candidatos, ruta)
+        else El actor presiona "Guardar"
+          Consultor -> PANT : Presiona "Guardar"
+          PANT -> GEVA : exportarClaves(evaluacionDTO, listaCandidatoCuestionarioDTO, salida)
+          GEVA -> FAC : exportarResultados(titulo, "EXCEL", listaCandidatoCuestionarioDTO, salida)
+          FAC -> EXP : exportarExcel(titulo, listaCandidatoCuestionarioDTO, salida)
           EXP --> FAC : true
           FAC --> GEVA : true
           GEVA --> PANT : true
-          PANT --> Consultor : Guarda el archivo
+          PANT --> Consultor : El navegador descarga el archivo y el actor\nelige la carpeta donde guardarlo
 
           note right of FAC
-            Nombre del archivo:
-            aaaa-mm-dd-hh-mm-NombreFunción.xls
+            salida es el OutputStream de la respuesta HTTP:
+            en una aplicación web el archivo se descarga
+            y el usuario elige dónde guardarlo.
           end note
         end
 

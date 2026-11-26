@@ -16,23 +16,34 @@ loop mientras el actor no presione "Salir"
     note over PANT, DAO : Se invoca el CU021 - Dar de alta Pregunta
     PANT --> Consultor : Actualiza la grilla
 
+  else El actor presiona "Buscar" sin ingresar ningún criterio
+
+    Consultor -> PANT : Presiona "Buscar"
+    PANT -> PANT : validarCriterios()
+    PANT --> Consultor : "Debe ingresar al menos un criterio de búsqueda"
+    note right of PANT : Vuelve a la pantalla de búsqueda
+
   else El actor ingresa al menos un criterio y presiona "Buscar"
 
-    Consultor -> PANT : Ingresa los criterios y presiona "Buscar"
+    Consultor -> PANT : Ingresa los criterios (Competencia, Factor\ny/o Nombre) y presiona "Buscar"
+    PANT -> PANT : validarCriterios()
     PANT -> GES : buscarPreguntas(filtros)
-
-    loop por cada factor que cumple los filtros
-      GES -> DAO : buscarPorFactor(idFactor)
-      DAO --> GES : preguntas
-    end
-
+    GES -> DAO : buscarPorCriterios(idCompetencia, idFactor, nombre)
+    DAO --> GES : preguntas
     GES --> PANT : listaPreguntasDTO
-    PANT --> Consultor : Muestra la grilla con Competencia,\nFactor y Pregunta
 
-    note right of GES
-      El criterio de búsqueda
-      es "contiene".
+    note right of DAO
+      Una sola consulta con todos los criterios:
+      0 o vacío = sin ese filtro. El nombre se
+      busca con criterio "contiene", así también
+      se puede buscar solo por nombre.
     end note
+
+    alt No hay preguntas que cumplan los criterios
+      PANT --> Consultor : "No se encontraron preguntas con los criterios ingresados"
+    else Hay preguntas
+      PANT --> Consultor : Muestra la grilla con Competencia,\nFactor y Pregunta
+    end
 
     alt El actor selecciona una pregunta y presiona "Modificar"
 

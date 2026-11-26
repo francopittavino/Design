@@ -8,8 +8,11 @@ participant ":GestorCompetencias" as GCOM <<gestor>>
 participant ":GestorFactores" as GFAC <<gestor>>
 participant ":GestorOpcionesRespuesta" as GOPC <<gestor>>
 participant ":GestorPreguntas" as GPRE <<gestor>>
+participant ":CompetenciaDAO" as CDAO <<dao>>
 participant ":FactorDAO" as FDAO <<dao>>
 participant ":PreguntaDAO" as PDAO <<dao>>
+participant ":OpcionRespuestaDAO" as ODAO <<dao>>
+participant ":RegistroAuditoriaDAO" as ADAO <<dao>>
 participant "dto:PreguntaDTO" as DTO <<dto>>
 participant "preg:Pregunta" as PREG <<entidad>>
 participant "pi:PonderacionItem" as PITEM <<entidad>>
@@ -23,13 +26,26 @@ activate FORM
 
 FORM -> GCOM : buscarCompetencias(null)
 activate GCOM
+GCOM -> CDAO : listarTodas()
+activate CDAO
+CDAO --> GCOM : listaCompetencias
+deactivate CDAO
 GCOM --> FORM : List<CompetenciaDTO>
 deactivate GCOM
 
 FORM -> GOPC : buscarOpciones(null)
 activate GOPC
+GOPC -> ODAO : listarTodas()
+activate ODAO
+ODAO --> GOPC : listaOpciones
+deactivate ODAO
 GOPC --> FORM : List<OpcionRespuestaDTO>
 deactivate GOPC
+
+note right of GOPC
+  Sin nombre (null) se listan todas las
+  competencias / opciones activas.
+end note
 
 FORM --> ACT : [1] muestra el formulario de alta:\nCompetencia, Factor, Nombre de Pregunta,\nPregunta, Descripcion (opcional),\nOpcion de Respuesta\n+ botones "Generar con IA", "Aceptar", "Cancelar"
 
@@ -56,6 +72,10 @@ opt el actor selecciona una Opcion de Respuesta
   ACT -> FORM : seleccionarOpcionRespuesta(idOpcion)
   FORM -> GOPC : obtenerItems(idOpcion)
   activate GOPC
+  GOPC -> ODAO : buscarPorId(idOpcion)
+  activate ODAO
+  ODAO --> GOPC : opcion (con sus items)
+  deactivate ODAO
   GOPC --> FORM : List<ItemOpcionRespuestaDTO>
   deactivate GOPC
   FORM --> ACT : muestra la grilla ordenada por Orden:\nOrden (solo lectura), Descripcion (solo lectura),\nPonderacion (editable)
@@ -85,7 +105,7 @@ loop mientras existan errores de validacion
   deactivate DTO
 
   FORM -> GPRE : getInstance()
-  FORM -> GPRE : crearPregunta(dto)
+  FORM -> GPRE : crearPregunta(dto, usuario)
   activate GPRE
 
   GPRE -> GPRE : validar(dto)
@@ -99,7 +119,7 @@ loop mientras existan errores de validacion
   GPRE --> GPRE : listaErrores
   deactivate GPRE
 
-  GPRE -> PDAO : buscarPorCriterios(idCompetencia, idFactor, nombre)
+  GPRE -> PDAO : buscarPorCriterios(idCompetencia, idFactor, "")
   activate PDAO
   PDAO --> GPRE : listaExistentes
   deactivate PDAO
@@ -123,6 +143,11 @@ loop mientras existan errores de validacion
     FDAO --> GPRE : factor
     deactivate FDAO
 
+    GPRE -> ODAO : buscarPorId(idOpcionRespuesta)
+    activate ODAO
+    ODAO --> GPRE : opcionRespuesta
+    deactivate ODAO
+
     GPRE -> PREG : create(nombre, enunciado, descripcion, factor, opcionRespuesta)
     activate PREG
     deactivate PREG
@@ -140,6 +165,10 @@ loop mientras existan errores de validacion
     activate PDAO
     PDAO --> GPRE : preg (persistida)
     deactivate PDAO
+
+    GPRE -> ADAO : guardar(new RegistroAuditoria(usuario, "PREGUNTA", "ALTA"))
+    activate ADAO
+    deactivate ADAO
 
     GPRE --> FORM : PreguntaDTO
     FORM --> ACT : [3] "La Pregunta <Nombre Pregunta> se ha creado\ncorrectamente. Desea cargar otra?"\n[4] botones "SI" y "NO"

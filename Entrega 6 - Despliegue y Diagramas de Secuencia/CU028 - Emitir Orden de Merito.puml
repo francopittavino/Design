@@ -46,8 +46,18 @@ else El actor busca el puesto
     Consultor -> PANT : Selecciona las evaluaciones (o TODAS) y confirma
 
     PANT -> GREP : emitirOrdenMerito(puestoDTO, evaluacionesDTO)
+    GREP -> EDAO : buscarPorPuesto(idPuesto)
+    EDAO --> GREP : evaluaciones
+    note right of GREP
+      Se quedan las evaluaciones seleccionadas
+      (lista vacía = TODAS) y el puesto se toma
+      de la evaluación.
+    end note
+    GREP -> EVAL : getPuesto()
+    EVAL --> GREP : puesto
     create participant "ordenMerito" as OM
     GREP --> OM : <<crear>>(puesto)
+    GREP -> OM : setDescripcionEvaluaciones("TODAS" / "N° x, y")
     GREP -> PDAO : buscarCaracteristicas(idPuesto)
     PDAO --> GREP : caracteristicasPuesto
     note right of PDAO
@@ -68,14 +78,18 @@ else El actor busca el puesto
 
         alt El cuestionario está "Completo"
 
-          GREP -> CUES : getResultados()
-          CUES --> GREP : resultadosCompetencia
           loop por cada competencia requerida para el puesto
+            GREP -> CARP : getCompetencia()
+            CARP --> GREP : competencia
+            GREP -> CUES : getResultado(competencia)
+            CUES --> GREP : resultadoCompetencia
             GREP -> CARP : getPonderacionMinima()
             CARP --> GREP : ponderacionMinima
             GREP -> RCOM : superaPonderacionMinima(ponderacionMinima)
             RCOM --> GREP : true / false
           end
+          GREP -> CUES : getPuntajeTotal()
+          CUES --> GREP : puntaje
           GREP -> ITEM : setPuntajeObtenido(puntaje)
           GREP -> ITEM : setCumplePonderaciones(true / false)
           GREP -> ITEM : setFechaInicio(), setFechaFin(), setCantAccesos()
@@ -94,18 +108,6 @@ else El actor busca el puesto
       end
     end
 
-    GREP -> OM : tieneCuestionariosCompletos()
-    OM --> GREP : true / false
-
-    opt Ningún cuestionario de las evaluaciones seleccionadas está "Completo"
-      GREP --> PANT : sinCuestionariosCompletos
-      PANT --> Consultor : "Ninguna de las evaluaciones seleccionadas tiene\ncuestionarios completos. El orden de mérito no tendrá puntajes."
-      note right of PANT
-        Se emite igual el orden de mérito, solo con
-        los candidatos agrupados por estado.
-      end note
-    end
-
     GREP -> OM : generar()
     note right of OM
       Primero van los candidatos con cuestionario
@@ -118,25 +120,42 @@ else El actor busca el puesto
     OM --> GREP : ok
     GREP --> PANT : ordenMerito
 
+    PANT -> OM : tieneCuestionariosCompletos()
+    OM --> PANT : true / false
+
+    opt Ningún cuestionario de las evaluaciones seleccionadas está "Completo"
+      PANT --> Consultor : "Ninguna de las evaluaciones seleccionadas tiene\ncuestionarios completos. El orden de mérito no tendrá puntajes."
+      note right of PANT
+        Se emite igual el orden de mérito, solo con
+        los candidatos agrupados por estado.
+      end note
+    end
+
     PANT --> Consultor : Muestra el listado (Tipo y Nro de documento, Apellido,\nNombre, Puntaje Obtenido, Datos Adicionales)
 
     Consultor -> PANT : Presiona "Imprimir"
-    PANT -> GREP : imprimirOrdenMerito(ordenMerito)
+    PANT -> GREP : imprimirOrdenMerito(ordenMerito, salida)
     create participant "exportadorPDF" as EXP
-    GREP --> EXP : <<crear>>
+    GREP --> EXP : <<crear>>(salida)
     GREP -> OM : setFormato(exportadorPDF)
     GREP -> OM : imprimir()
+    OM -> OM : arma los datos por sección\n(A alcanzaron, B no alcanzaron, C por estado)
     OM -> EXP : exportar(titulo, datos)
+    note right of EXP
+      datos: Map<String, List<List<String>>>
+      (sección → filas con su encabezado).
+      salida es el OutputStream de la respuesta HTTP.
+    end note
     EXP --> OM : true
-    OM --> GREP : ok
-    GREP --> PANT : ok
+    OM --> GREP : true
+    GREP --> PANT : true
     note right of GREP
       El gestor elige el formato (PDF) y se lo pasa al
       reporte. El OrdenMerito no sabe qué exportador
       usa: solo le delega exportar() (patrón Bridge,
       Reporte ↔ ExportadorFormato).
     end note
-    PANT --> Consultor : Envía el listado a la impresora
+    PANT --> Consultor : El navegador abre el PDF y el actor lo envía a la impresora
     note right of PANT : El CU termina
 
   end

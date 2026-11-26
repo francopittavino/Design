@@ -6,7 +6,17 @@ Esta entrega reúne todas las etapas del TP con sus correcciones, como pide la c
 correcciones: se van a dar en el coloquio. El código fuente incluye todo lo diseñado: las clases del diagrama
 de clases y todo lo necesario para los CU con diagrama de secuencia.
 
-## Contenido
+## Qué hay en esta carpeta
+
+| Archivo | Para qué |
+|---------|----------|
+| `Diseño original/Entrega Final - ... .zip` | El zip de entrega con la interfaz como en los wireframes de la Etapa 1. Es el que coincide con el código del repo. |
+| `Diseño nuevo/Entrega Final - ... .zip` | El mismo zip, pero con la interfaz renovada (tarjetas con sombra, botones con relieve, íconos en el menú). Cambian solo `estilos.css`, `_encabezado.jspf`, `menu.jsp`, `login.jsp` y `cuestionario.jsp`. |
+| `Apunte para el coloquio.pdf` | Uso interno del grupo para preparar el coloquio. No se entrega. |
+
+Los zips no llevan ningún LEEME. Antes de subir hay que elegir cuál de los dos.
+
+## Contenido del zip
 
 | Carpeta | Etapa | Qué tiene |
 |---------|-------|-----------|
@@ -15,7 +25,7 @@ de clases y todo lo necesario para los CU con diagrama de secuencia.
 | `4 - Diagrama Entidad Relacion` | 4 | DER corregido (.drawio, .png) e informe de justificación |
 | `5 - Diagramas de Secuencia` | 5 | CU020, CU021 y CU025 corregidos (.puml, .png, .svg) |
 | `6 - Despliegue y Diagramas de Secuencia` | 6 | Diagrama de despliegue, CU026 y CU028 (.puml, .png, .svg) |
-| `7 y 8 - Implementacion` | 7 y 8 | Código fuente (`capital-humano/`) y LEEME con cómo ejecutarlo y los datos de prueba |
+| `7 y 8 - Implementacion` | 7 y 8 | Código fuente (`capital-humano/`) |
 
 ## Correcciones aplicadas
 

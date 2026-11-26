@@ -84,4 +84,19 @@ public class CandidatoDAOImpl implements CandidatoDAO {
             }
         }
     }
+
+    @Override
+    public void importar(List<Candidato> candidatos) {
+        throw new UnsupportedOperationException("CU006 - Importar candidatos: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void guardar(Candidato c) {
+        throw new UnsupportedOperationException("CU006 - Importar candidatos: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void actualizarClaveAcceso(String nroCandidato, String clave) {
+        throw new UnsupportedOperationException("CU001 - Autenticar usuario: fuera del alcance de las Etapas 7 y 8");
+    }
 }

@@ -1,6 +1,7 @@
 package capitalhumano.facade;
 
 import capitalhumano.dto.CandidatoCuestionarioDTO;
+import capitalhumano.entidades.Puesto;
 import capitalhumano.exportacion.ExportadorExcel;
 
 import java.io.OutputStream;
@@ -11,6 +12,12 @@ import java.util.Map;
 
 /** Genera los archivos que el consultor descarga (reutiliza los exportadores del Bridge). */
 public class ExportadorResultadosArchivo implements IExportadorResultados {
+
+    /** CU007 - Exportar resultados (fuera del alcance de las Etapas 7 y 8). */
+    @Override
+    public boolean exportarCSV(Puesto puesto, OutputStream salida) {
+        throw new UnsupportedOperationException("CU007 - Exportar resultados: fuera del alcance de las Etapas 7 y 8");
+    }
 
     @Override
     public boolean exportarExcel(String titulo, List<CandidatoCuestionarioDTO> candidatos, OutputStream salida) {

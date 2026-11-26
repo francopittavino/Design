@@ -3,6 +3,7 @@ package capitalhumano.facade;
 import capitalhumano.entidades.Competencia;
 import capitalhumano.entidades.Factor;
 import capitalhumano.entidades.Pregunta;
+import capitalhumano.entidades.Puesto;
 
 /**
  * El CU033 (Generar pregunta con IA) no forma parte de las etapas 7 y 8. Esta implementación
@@ -12,6 +13,11 @@ import capitalhumano.entidades.Pregunta;
 public class ServicioIANoDisponible implements IServicioIA {
     @Override
     public Pregunta generarPregunta(Competencia competencia, Factor factor) {
+        throw new ServicioExternoException("Servicio de IA no disponible");
+    }
+
+    @Override
+    public Puesto generarPuesto(String nombre) {
         throw new ServicioExternoException("Servicio de IA no disponible");
     }
 }

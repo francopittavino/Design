@@ -33,4 +33,19 @@ public class CompetenciaDAOImpl implements CompetenciaDAO {
             throw new DatosException("Error al leer las competencias", e);
         }
     }
+
+    @Override
+    public void guardar(Competencia comp) {
+        throw new UnsupportedOperationException("CU013 - Dar de alta competencia: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void actualizar(Competencia comp) {
+        throw new UnsupportedOperationException("CU014 - Modificar competencia: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void eliminarLogico(int id) {
+        throw new UnsupportedOperationException("CU015 - Dar de baja competencia: fuera del alcance de las Etapas 7 y 8");
+    }
 }

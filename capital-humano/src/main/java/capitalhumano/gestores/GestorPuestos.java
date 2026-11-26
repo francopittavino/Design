@@ -1,5 +1,8 @@
 package capitalhumano.gestores;
 
+import capitalhumano.facade.ServiciosExternosFacade;
+import capitalhumano.dao.impl.RegistroAuditoriaDAOImpl;
+import capitalhumano.dao.RegistroAuditoriaDAO;
 import capitalhumano.dao.PuestoDAO;
 import capitalhumano.dao.impl.PuestoDAOImpl;
 import capitalhumano.dto.CaracteristicaPuestoDTO;
@@ -14,6 +17,8 @@ public final class GestorPuestos {
     private static GestorPuestos instance;
 
     private final PuestoDAO puestoDAO = new PuestoDAOImpl();
+    private final RegistroAuditoriaDAO auditoriaDAO = new RegistroAuditoriaDAOImpl();
+    private final ServiciosExternosFacade serviciosFacade = new ServiciosExternosFacade();
 
     private GestorPuestos() {}
 
@@ -50,5 +55,30 @@ public final class GestorPuestos {
         dto.setNombre(p.getNombre());
         dto.setEmpresa(p.getEmpresa().getNombre());
         return dto;
+    }
+
+    /** CU009 - Dar de alta puesto (fuera del alcance de las Etapas 7 y 8). */
+    public PuestoDTO crearPuesto(PuestoDTO datos) {
+        throw new UnsupportedOperationException("CU009 - Dar de alta puesto: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU010 - Modificar puesto (fuera del alcance de las Etapas 7 y 8). */
+    public PuestoDTO modificarPuesto(int id, PuestoDTO datos) {
+        throw new UnsupportedOperationException("CU010 - Modificar puesto: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU011 - Dar de baja puesto (fuera del alcance de las Etapas 7 y 8). */
+    public void darDeBajaPuesto(int id) {
+        throw new UnsupportedOperationException("CU011 - Dar de baja puesto: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU009 - Dar de alta puesto con IA (fuera del alcance de las Etapas 7 y 8). */
+    public PuestoDTO generarConIA(String nombre) {
+        throw new UnsupportedOperationException("CU009 - Dar de alta puesto con IA: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU009 - Validar puesto (fuera del alcance de las Etapas 7 y 8). */
+    public List<String> validar(PuestoDTO p) {
+        throw new UnsupportedOperationException("CU009 - Validar puesto: fuera del alcance de las Etapas 7 y 8");
     }
 }

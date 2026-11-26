@@ -36,4 +36,19 @@ public class FactorDAOImpl implements FactorDAO {
             throw new DatosException("Error al leer los factores", e);
         }
     }
+
+    @Override
+    public void guardar(Factor factor) {
+        throw new UnsupportedOperationException("CU017 - Dar de alta factor: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void actualizar(Factor factor) {
+        throw new UnsupportedOperationException("CU018 - Modificar factor: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void eliminarLogico(int id) {
+        throw new UnsupportedOperationException("CU019 - Dar de baja factor: fuera del alcance de las Etapas 7 y 8");
+    }
 }

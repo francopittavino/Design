@@ -76,14 +76,14 @@ class CalculoPuntajesTest {
     }
 
     @Test
-    void generarCuestionariosNoRepiteClaves() {
+    void generarClavesNoRepiteClaves() {
         List<capitalhumano.dto.CandidatoGestionDTO> candidatos = new java.util.ArrayList<>();
         for (int i = 0; i < 50; i++) {
             capitalhumano.dto.CandidatoGestionDTO c = new capitalhumano.dto.CandidatoGestionDTO();
             c.setNroCandidato(String.valueOf(i));
             candidatos.add(c);
         }
-        long distintas = GestorEvaluacion.getInstance().generarCuestionarios(candidatos).stream()
+        long distintas = GestorEvaluacion.getInstance().generarClaves(candidatos).stream()
                 .map(capitalhumano.dto.CandidatoCuestionarioDTO::getToken).distinct().count();
         assertEquals(50, distintas);
     }

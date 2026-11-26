@@ -27,11 +27,13 @@ public class PreguntaDAOImpl implements PreguntaDAO {
 
     @Override
     public List<Pregunta> buscarPorCriterios(int idCompetencia, int idFactor, String nombre) {
-        // Para validar duplicados (CU021 2.C) se traen todas las preguntas activas de esa competencia y factor;
-        // la comparación de nombre y enunciado la hace el gestor.
+        // 0 / null / vacío = sin ese filtro. El nombre se compara con criterio "contiene" (CU020).
+        String criterio = nombre == null ? "" : nombre.trim().toUpperCase();
         return catalogo().preguntas.values().stream()
-                .filter(p -> p.isActivo() && p.getFactor().getId() == idFactor
-                        && p.getFactor().getCompetencia().getId() == idCompetencia)
+                .filter(p -> p.isActivo()
+                        && (idFactor <= 0 || p.getFactor().getId() == idFactor)
+                        && (idCompetencia <= 0 || p.getFactor().getCompetencia().getId() == idCompetencia)
+                        && (criterio.isEmpty() || p.getNombre().toUpperCase().contains(criterio)))
                 .toList();
     }
 
@@ -96,5 +98,15 @@ public class PreguntaDAOImpl implements PreguntaDAO {
         } catch (SQLException e) {
             throw new DatosException("Error al leer las preguntas", e);
         }
+    }
+
+    @Override
+    public void actualizar(Pregunta pregunta) {
+        throw new UnsupportedOperationException("CU022 - Modificar pregunta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void eliminarLogico(int id) {
+        throw new UnsupportedOperationException("CU023 - Dar de baja pregunta: fuera del alcance de las Etapas 7 y 8");
     }
 }

@@ -106,7 +106,7 @@ public class PantallaEvaluarCandidatos extends PantallaBase {
             return;
         }
         List<CandidatoGestionDTO> bloqueados = GestorCandidatos.getInstance()
-                .evaluarCandidatos(new ArrayList<>(ev.aEvaluar.keySet()), null);
+                .verificarCuestionariosActivos(new ArrayList<>(ev.aEvaluar.keySet()));
         if (!bloqueados.isEmpty()) {
             modal(req, new Modal(Modal.PROHIBIDO, "Cuestionario activo",
                     "Los siguientes candidatos poseen cuestionarios activos o en proceso y no pueden ser evaluados nuevamente:")
@@ -135,7 +135,7 @@ public class PantallaEvaluarCandidatos extends PantallaBase {
             mostrarPaso(req, resp, 2);
             return;
         }
-        ev.claves = gestor.generarCuestionarios(new ArrayList<>(ev.aEvaluar.values()));
+        ev.claves = gestor.generarClaves(new ArrayList<>(ev.aEvaluar.values()));
         mostrarPaso(req, resp, 3);
     }
 

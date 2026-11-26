@@ -1,5 +1,8 @@
 package capitalhumano.gestores;
 
+import capitalhumano.dto.ResultadoComparativoDTO;
+import capitalhumano.dao.impl.CuestionarioDAOImpl;
+import capitalhumano.dao.CuestionarioDAO;
 import capitalhumano.dao.EvaluacionDAO;
 import capitalhumano.dao.PuestoDAO;
 import capitalhumano.dao.impl.EvaluacionDAOImpl;
@@ -25,6 +28,7 @@ public final class GestorReportes {
     private static GestorReportes instance;
 
     private final EvaluacionDAO evaluacionDAO = new EvaluacionDAOImpl();
+    private final CuestionarioDAO cuestionarioDAO = new CuestionarioDAOImpl();
     private final PuestoDAO puestoDAO = new PuestoDAOImpl();
 
     private GestorReportes() {}
@@ -93,5 +97,10 @@ public final class GestorReportes {
     public boolean imprimirOrdenMerito(OrdenMerito om, OutputStream salida) {
         om.setFormato(new ExportadorPDF(salida));
         return om.imprimir();
+    }
+
+    /** CU027 - Emitir reporte comparativo (fuera del alcance de las Etapas 7 y 8). */
+    public ResultadoComparativoDTO emitirReporteComparativo(String nroCandidato, PuestoDTO puesto) {
+        throw new UnsupportedOperationException("CU027 - Emitir reporte comparativo: fuera del alcance de las Etapas 7 y 8");
     }
 }

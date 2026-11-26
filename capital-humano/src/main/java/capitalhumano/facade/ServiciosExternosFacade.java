@@ -5,6 +5,7 @@ import capitalhumano.entidades.Competencia;
 import capitalhumano.entidades.Consultor;
 import capitalhumano.entidades.Factor;
 import capitalhumano.entidades.Pregunta;
+import capitalhumano.entidades.ResultadoImport;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -13,15 +14,19 @@ import java.util.List;
 public class ServiciosExternosFacade {
     private final IAutenticacionLDAP authLDAP;
     private final IServicioIA servicioIA;
+    private final IImportadorCandidatos importador;
     private final IExportadorResultados exportador;
 
     public ServiciosExternosFacade() {
-        this(new AutenticacionLDAPSimulada(), new ServicioIANoDisponible(), new ExportadorResultadosArchivo());
+        this(new AutenticacionLDAPSimulada(), new ServicioIANoDisponible(),
+                new ImportadorCandidatosNoImplementado(), new ExportadorResultadosArchivo());
     }
 
-    public ServiciosExternosFacade(IAutenticacionLDAP authLDAP, IServicioIA servicioIA, IExportadorResultados exportador) {
+    public ServiciosExternosFacade(IAutenticacionLDAP authLDAP, IServicioIA servicioIA,
+                                   IImportadorCandidatos importador, IExportadorResultados exportador) {
         this.authLDAP = authLDAP;
         this.servicioIA = servicioIA;
+        this.importador = importador;
         this.exportador = exportador;
     }
 
@@ -31,6 +36,11 @@ public class ServiciosExternosFacade {
 
     public Pregunta generarPreguntaIA(Competencia comp, Factor factor) {
         return servicioIA.generarPregunta(comp, factor);
+    }
+
+    /** CU006 - Importar candidatos (fuera del alcance de las Etapas 7 y 8). */
+    public ResultadoImport importarCandidatos(String ruta) {
+        return importador.importar(ruta);
     }
 
     /** CU025: exporta la lista de candidatos con sus claves (formato "EXCEL"). */

@@ -92,4 +92,19 @@ public class PuestoDAOImpl implements PuestoDAO {
             throw new DatosException("Error al contar", e);
         }
     }
+
+    @Override
+    public void guardar(Puesto puesto) {
+        throw new UnsupportedOperationException("CU009 - Dar de alta puesto: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void actualizar(Puesto puesto) {
+        throw new UnsupportedOperationException("CU010 - Modificar puesto: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void eliminarLogico(int id) {
+        throw new UnsupportedOperationException("CU011 - Dar de baja puesto: fuera del alcance de las Etapas 7 y 8");
+    }
 }

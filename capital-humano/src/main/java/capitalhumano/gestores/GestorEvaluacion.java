@@ -64,9 +64,11 @@ public final class GestorEvaluacion {
 
     /**
      * CU025 paso 11: arma la lista de candidatos a evaluar con su clave de ingreso
-     * (8 caracteres al azar, con letras y dígitos). Todavía no se guarda nada.
+     * (8 caracteres al azar, con letras y dígitos). Solo genera las claves: los cuestionarios se
+     * crean una sola vez, en Evaluacion.crearCuestionarios, cuando el consultor presiona "Finalizar"
+     * (corrección de la Entrega 5: antes se llamaba generarCuestionarios).
      */
-    public List<CandidatoCuestionarioDTO> generarCuestionarios(List<CandidatoGestionDTO> candidatos) {
+    public List<CandidatoCuestionarioDTO> generarClaves(List<CandidatoGestionDTO> candidatos) {
         List<CandidatoCuestionarioDTO> lista = new ArrayList<>();
         Set<String> usadas = new HashSet<>();
         for (CandidatoGestionDTO c : candidatos) {
@@ -143,5 +145,10 @@ public final class GestorEvaluacion {
         String titulo = "Evaluación " + eval.getId() + " - " + eval.getPuesto() + " - "
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
         return serviciosFacade.exportarResultados(titulo, "EXCEL", candidatos, salida);
+    }
+
+    /** CU007 - Exportar resultados (fuera del alcance de las Etapas 7 y 8). */
+    public boolean exportarResultados(PuestoDTO puesto, OutputStream salida) {
+        throw new UnsupportedOperationException("CU007 - Exportar resultados: fuera del alcance de las Etapas 7 y 8");
     }
 }

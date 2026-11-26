@@ -1,5 +1,9 @@
 package capitalhumano.gestores;
 
+import capitalhumano.dao.impl.RegistroAuditoriaDAOImpl;
+import capitalhumano.dao.impl.PreguntaDAOImpl;
+import capitalhumano.dao.RegistroAuditoriaDAO;
+import capitalhumano.dao.PreguntaDAO;
 import capitalhumano.dao.OpcionRespuestaDAO;
 import capitalhumano.dao.impl.OpcionRespuestaDAOImpl;
 import capitalhumano.dto.ItemOpcionRespuestaDTO;
@@ -14,6 +18,8 @@ public final class GestorOpcionesRespuesta {
     private static GestorOpcionesRespuesta instance;
 
     private final OpcionRespuestaDAO opcionDAO = new OpcionRespuestaDAOImpl();
+    private final PreguntaDAO preguntaDAO = new PreguntaDAOImpl();
+    private final RegistroAuditoriaDAO auditoriaDAO = new RegistroAuditoriaDAOImpl();
 
     private GestorOpcionesRespuesta() {}
 
@@ -35,5 +41,25 @@ public final class GestorOpcionesRespuesta {
         return o.getItems().stream().filter(ItemOpcionDeRespuesta::isActivo)
                 .sorted(Comparator.comparingInt(ItemOpcionDeRespuesta::getOrden))
                 .map(i -> new ItemOpcionRespuestaDTO(i.getId(), i.getOrden(), i.getDescripcion())).toList();
+    }
+
+    /** CU029 - Dar de alta opción de respuesta (fuera del alcance de las Etapas 7 y 8). */
+    public OpcionRespuestaDTO crearOpcion(OpcionRespuestaDTO datos) {
+        throw new UnsupportedOperationException("CU029 - Dar de alta opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU030 - Modificar opción de respuesta (fuera del alcance de las Etapas 7 y 8). */
+    public OpcionRespuestaDTO modificarOpcion(int id, OpcionRespuestaDTO datos) {
+        throw new UnsupportedOperationException("CU030 - Modificar opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU031 - Dar de baja opción de respuesta (fuera del alcance de las Etapas 7 y 8). */
+    public void darDeBajaOpcion(int id) {
+        throw new UnsupportedOperationException("CU031 - Dar de baja opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU029 - Validar opción de respuesta (fuera del alcance de las Etapas 7 y 8). */
+    public List<String> validar(OpcionRespuestaDTO o) {
+        throw new UnsupportedOperationException("CU029 - Validar opción de respuesta: fuera del alcance de las Etapas 7 y 8");
     }
 }

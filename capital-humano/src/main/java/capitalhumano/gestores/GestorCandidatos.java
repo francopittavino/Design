@@ -1,9 +1,10 @@
 package capitalhumano.gestores;
 
+import capitalhumano.facade.ServiciosExternosFacade;
+import capitalhumano.dto.ResultadoImportacionDTO;
 import capitalhumano.dao.CandidatoDAO;
 import capitalhumano.dao.impl.CandidatoDAOImpl;
 import capitalhumano.dto.CandidatoGestionDTO;
-import capitalhumano.dto.PuestoDTO;
 import capitalhumano.entidades.Candidato;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public final class GestorCandidatos {
     private static GestorCandidatos instance;
 
     private final CandidatoDAO candidatoDAO = new CandidatoDAOImpl();
+    private final ServiciosExternosFacade serviciosFacade = new ServiciosExternosFacade();
 
     private GestorCandidatos() {}
 
@@ -29,11 +31,12 @@ public final class GestorCandidatos {
     }
 
     /**
-     * CU025 paso 6 / 6.A: verifica los candidatos a evaluar. Devuelve los que NO pueden ser evaluados
-     * porque tienen un cuestionario Activo o En Proceso (lista vacía = se puede seguir).
-     * El puesto todavía no se eligió, por eso llega null.
+     * CU025 paso 6 / 6.A: devuelve los candidatos que NO pueden ser evaluados porque tienen un
+     * cuestionario Activo o En Proceso (lista vacía = se puede seguir). Antes se llamaba
+     * evaluarCandidatos, igual que el método de GestorEvaluacion que crea la evaluación
+     * (corrección de la Entrega 5: un mismo nombre con dos significados).
      */
-    public List<CandidatoGestionDTO> evaluarCandidatos(List<String> nrosCandidatos, PuestoDTO puesto) {
+    public List<CandidatoGestionDTO> verificarCuestionariosActivos(List<String> nrosCandidatos) {
         List<CandidatoGestionDTO> conCuestionarioActivo = new ArrayList<>();
         for (String nro : nrosCandidatos) {
             Candidato candidato = candidatoDAO.buscarPorNroCandidato(nro);
@@ -52,5 +55,10 @@ public final class GestorCandidatos {
         dto.setEmail(c.getEmail());
         dto.setEscolaridad(c.getEscolaridad());
         return dto;
+    }
+
+    /** CU006 - Importar candidatos (fuera del alcance de las Etapas 7 y 8). */
+    public ResultadoImportacionDTO importarCandidatos(String archivoCsv) {
+        throw new UnsupportedOperationException("CU006 - Importar candidatos: fuera del alcance de las Etapas 7 y 8");
     }
 }

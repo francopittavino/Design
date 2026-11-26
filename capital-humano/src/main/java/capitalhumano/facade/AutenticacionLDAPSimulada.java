@@ -21,4 +21,10 @@ public class AutenticacionLDAPSimulada implements IAutenticacionLDAP {
         if (c == null || !c.isActivo()) return null;
         return password.equals(Configuracion.getInstance().getPasswordLdapSimulado()) ? c : null;
     }
+
+    /** La sesión del consultor la maneja el contenedor web (HttpSession + FiltroSesion); el LDAP simulado no emite tokens. */
+    @Override
+    public boolean validarSesion(String token) {
+        throw new UnsupportedOperationException("El LDAP simulado no emite tokens de sesión");
+    }
 }

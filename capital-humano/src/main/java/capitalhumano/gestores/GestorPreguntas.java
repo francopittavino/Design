@@ -48,30 +48,16 @@ public final class GestorPreguntas {
 
     /**
      * Filtros: "idCompetencia", "idFactor" (0 = sin filtro) y "nombre" (criterio "contiene").
-     * Recorre los factores que cumplen los filtros y por cada uno trae sus preguntas (diag. de secuencia CU020).
+     * Una sola consulta con todos los criterios, así también se puede buscar solo por nombre
+     * (corrección de la Entrega 5). Que haya al menos un criterio lo valida la pantalla.
      */
     public List<PreguntaDTO> buscarPreguntas(Map<String, String> filtros) {
         int idCompetencia = entero(filtros.get("idCompetencia"));
         int idFactor = entero(filtros.get("idFactor"));
         String nombre = mayus(filtros.get("nombre"));
-
-        List<Factor> factores;
-        if (idFactor > 0) {
-            Factor f = factorDAO.buscarPorId(idFactor);
-            factores = f == null ? List.of() : List.of(f);
-        } else if (idCompetencia > 0) {
-            factores = factorDAO.buscarPorCompetencia(idCompetencia);
-        } else {
-            factores = factorDAO.listarTodos();
-        }
-
         List<PreguntaDTO> resultado = new ArrayList<>();
-        for (Factor factor : factores) {
-            for (Pregunta p : preguntaDAO.buscarPorFactor(factor.getId())) {
-                if (nombre.isEmpty() || p.getNombre().toUpperCase().contains(nombre)) {
-                    resultado.add(aDTO(p));
-                }
-            }
+        for (Pregunta p : preguntaDAO.buscarPorCriterios(idCompetencia, idFactor, nombre)) {
+            resultado.add(aDTO(p));
         }
         return resultado;
     }
@@ -86,7 +72,8 @@ public final class GestorPreguntas {
         normalizar(dto);
         List<String> errores = validar(dto);
         if (errores.isEmpty()) {
-            List<Pregunta> existentes = preguntaDAO.buscarPorCriterios(dto.getIdCompetencia(), dto.getIdFactor(), dto.getNombre());
+            // Todas las preguntas del factor (sin filtrar por nombre): el duplicado se valida por nombre Y por enunciado.
+            List<Pregunta> existentes = preguntaDAO.buscarPorCriterios(dto.getIdCompetencia(), dto.getIdFactor(), "");
             errores.addAll(verificarDuplicado(existentes, dto.getNombre(), dto.getEnunciado()));
         }
         if (!errores.isEmpty()) throw new ValidacionException(errores);
@@ -216,5 +203,15 @@ public final class GestorPreguntas {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    /** CU022 - Modificar pregunta (fuera del alcance de las Etapas 7 y 8). */
+    public PreguntaDTO modificarPregunta(int id, PreguntaDTO datos) {
+        throw new UnsupportedOperationException("CU022 - Modificar pregunta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    /** CU023 - Dar de baja pregunta (fuera del alcance de las Etapas 7 y 8). */
+    public void darDeBajaPregunta(int id) {
+        throw new UnsupportedOperationException("CU023 - Dar de baja pregunta: fuera del alcance de las Etapas 7 y 8");
     }
 }

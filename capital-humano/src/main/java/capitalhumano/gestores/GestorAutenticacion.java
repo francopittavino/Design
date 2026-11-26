@@ -57,4 +57,9 @@ public final class GestorAutenticacion {
         dto.setCandidato(c);
         return dto;
     }
+
+    /** Cierre de sesión: en la web lo hace PantallaLogin invalidando la HttpSession; el gestor no guarda estado. */
+    public void cerrarSesion() {
+        // El gestor es singleton y no guarda la sesión de nadie: no hay nada que liberar acá.
+    }
 }

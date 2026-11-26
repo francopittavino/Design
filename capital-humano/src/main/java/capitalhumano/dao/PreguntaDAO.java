@@ -12,7 +12,13 @@ public interface PreguntaDAO {
     /** Persiste la pregunta junto con sus ponderaciones en la misma transacción. */
     void guardar(Pregunta pregunta);
     /** CU021 2.C: preguntas activas de esa competencia y factor (para validar duplicados). */
+    /** Preguntas activas que cumplen los criterios (0 / vacío = sin filtro; nombre con criterio "contiene"). */
     List<Pregunta> buscarPorCriterios(int idCompetencia, int idFactor, String nombre);
     List<PonderacionItem> buscarPonderaciones(int idPregunta);
     boolean existePreguntaConOpcion(int idOpcion);
+
+    /** CU022 - Modificar pregunta (fuera del alcance de las Etapas 7 y 8). */
+    void actualizar(Pregunta pregunta);
+    /** CU023 - Dar de baja pregunta (fuera del alcance de las Etapas 7 y 8). */
+    void eliminarLogico(int id);
 }

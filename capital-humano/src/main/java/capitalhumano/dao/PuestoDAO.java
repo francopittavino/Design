@@ -17,4 +17,11 @@ public interface PuestoDAO {
     int contarCandidatos(int idPuesto);
     /** CU028 paso 4: cantidad de cuestionarios en estado "Completo" del puesto. */
     int contarEvaluacionesCompletas(int idPuesto);
+
+    /** CU009 - Dar de alta puesto (fuera del alcance de las Etapas 7 y 8). */
+    void guardar(Puesto puesto);
+    /** CU010 - Modificar puesto (fuera del alcance de las Etapas 7 y 8). */
+    void actualizar(Puesto puesto);
+    /** CU011 - Dar de baja puesto (fuera del alcance de las Etapas 7 y 8). */
+    void eliminarLogico(int id);
 }

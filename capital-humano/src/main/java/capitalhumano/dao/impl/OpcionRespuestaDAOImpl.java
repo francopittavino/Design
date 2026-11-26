@@ -33,4 +33,19 @@ public class OpcionRespuestaDAOImpl implements OpcionRespuestaDAO {
             throw new DatosException("Error al leer las opciones de respuesta", e);
         }
     }
+
+    @Override
+    public void guardar(OpcionDeRespuesta opcion) {
+        throw new UnsupportedOperationException("CU029 - Dar de alta opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void actualizar(OpcionDeRespuesta opcion) {
+        throw new UnsupportedOperationException("CU030 - Modificar opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
+
+    @Override
+    public void eliminarLogico(int id) {
+        throw new UnsupportedOperationException("CU031 - Dar de baja opción de respuesta: fuera del alcance de las Etapas 7 y 8");
+    }
 }

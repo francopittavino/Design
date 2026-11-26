@@ -1,0 +1,178 @@
+/* Capit@l Humano - estilo de los wireframes de la 1ra entrega (Diseño de Entradas/Salidas) */
+:root {
+    --fondo: #e9e9e6;
+    --panel: #fbfbf9;
+    --borde: #3a3a3a;
+    --linea: #c9c9c4;
+    --texto: #222;
+    --suave: #777;
+    --enc: #e2e2de;
+    --sel: #d6dce6;
+    --acento: #2f4f73;
+    --error: #8b1e1e;
+    --error-fondo: #fbeaea;
+    --ok: #285d2e;
+    --ok-fondo: #e8f3e6;
+    --fuente: "Courier New", Courier, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: var(--fuente);
+    font-size: 14px;
+}
+
+.barra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px;
+    background: #2b2b2b;
+    color: #eee;
+    font-size: 13px;
+}
+.barra a { color: #eee; }
+.barra .marca { font-weight: bold; letter-spacing: 1px; }
+
+.ventana {
+    max-width: 1100px;
+    margin: 24px auto;
+    background: var(--panel);
+    border: 3px solid var(--borde);
+    padding: 20px 28px 16px;
+    min-height: 560px;
+    display: flex;
+    flex-direction: column;
+}
+.ventana.angosta { max-width: 760px; min-height: 0; }
+
+h1 {
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 2px;
+    margin: 4px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--borde);
+}
+h1 small { display: block; font-size: 13px; letter-spacing: 0; font-weight: normal; margin-top: 4px; }
+
+.seccion {
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-left: 4px solid var(--borde);
+    padding-left: 6px;
+    margin: 18px 0 6px;
+}
+.ayuda { color: var(--suave); font-size: 11px; font-style: italic; margin: 2px 0 6px; }
+
+.filtros { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.campo { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.campo label { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
+.campo label .obl { color: var(--error); }
+.campo label .nota { font-weight: normal; color: var(--suave); text-transform: none; }
+
+input[type=text], input[type=password], input[type=number], select, textarea {
+    font-family: var(--fuente);
+    font-size: 14px;
+    padding: 6px 8px;
+    border: 1px solid #888;
+    background: #fff;
+    border-radius: 0;
+    width: 100%;
+}
+input[type=text], textarea { text-transform: uppercase; }
+input.sin-mayus { text-transform: none; }
+input:focus, select:focus, textarea:focus, button:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+input.invalido, select.invalido, textarea.invalido { border-color: var(--error); background: var(--error-fondo); }
+textarea { resize: vertical; min-height: 56px; }
+
+button, .boton {
+    font-family: var(--fuente);
+    font-size: 13px;
+    font-weight: bold;
+    padding: 7px 16px;
+    border: 1px solid #555;
+    background: #e4e4e0;
+    color: var(--texto);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+button:hover, .boton:hover { background: #d6d6d0; }
+button.primario, .boton.primario { background: #cfcfc8; border-width: 2px; }
+button:disabled { opacity: .5; cursor: default; }
+
+table.grilla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.grilla th { background: var(--enc); text-align: left; padding: 6px 8px; border: 1px solid var(--linea); font-size: 11px; text-transform: uppercase; }
+.grilla td { padding: 6px 8px; border: 1px solid var(--linea); vertical-align: top; }
+.grilla tr.seleccionable { cursor: pointer; }
+.grilla tr.seleccionable:hover td { background: #f0f0ec; }
+.grilla tr.seleccionada td { background: var(--sel); }
+.grilla td.num, .grilla th.num { text-align: right; }
+.grilla td.centro, .grilla th.centro { text-align: center; }
+.grilla .vacio td { color: var(--suave); font-style: italic; text-align: center; }
+.scroll { max-height: 260px; overflow-y: auto; border: 1px solid var(--linea); }
+
+.acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--linea); }
+.acciones .izq { margin-right: auto; }
+.botonera { display: flex; gap: 10px; justify-content: center; margin: 10px 0; }
+
+.aviso { border: 1px solid; padding: 8px 12px; margin: 10px 0; font-size: 13px; }
+.aviso.error { border-color: var(--error); background: var(--error-fondo); color: var(--error); }
+.aviso.ok { border-color: var(--ok); background: var(--ok-fondo); color: var(--ok); }
+.aviso.info { border-color: #999; background: #f1f1ee; border-style: dashed; color: #444; }
+.aviso ul { margin: 4px 0 0; padding-left: 20px; }
+
+/* Ventana modal de mensajes (tabla de mensajes de cada CU) */
+.modal-fondo { position: fixed; inset: 0; background: rgba(40, 40, 40, .45); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal { background: #fff; border: 2px solid var(--borde); min-width: 380px; max-width: 560px; box-shadow: 4px 4px 0 rgba(0,0,0,.25); }
+.modal .titulo { background: var(--enc); border-bottom: 1px solid var(--borde); padding: 6px 10px; font-weight: bold; font-size: 13px; }
+.modal .cuerpo { padding: 16px 20px; text-align: center; line-height: 1.5; }
+.modal .cuerpo .icono { font-size: 22px; display: block; margin-bottom: 6px; }
+.modal .cuerpo ul { text-align: left; }
+.modal .botonera { padding: 0 0 14px; margin: 0; }
+
+/* Pasos del wizard (CU025) */
+.pasos { display: flex; justify-content: center; align-items: center; gap: 0; margin-bottom: 6px; }
+.paso { text-align: center; font-size: 11px; color: var(--suave); width: 110px; }
+.paso .circ { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #888; margin: 0 auto 3px; line-height: 22px; font-weight: bold; background: #fff; }
+.paso.hecho .circ { background: #9a9a9a; color: #fff; border-color: #9a9a9a; }
+.paso.actual { color: var(--texto); font-weight: bold; }
+.paso.actual .circ { background: #333; color: #fff; border-color: #333; }
+.pasos .guion { width: 60px; height: 2px; background: #999; margin-bottom: 16px; }
+
+/* Cuestionario (CU026) */
+.progreso { height: 10px; background: #ddd; border: 1px solid #bbb; margin: 6px 0 14px; }
+.progreso div { height: 100%; background: #777; }
+.pregunta { padding: 12px 0; border-bottom: 1px dashed #bbb; }
+.pregunta .nro { font-weight: bold; font-size: 12px; }
+.pregunta .enunciado { font-style: italic; margin: 6px 0 8px; font-size: 15px; }
+.pregunta label { display: block; padding: 3px 0; cursor: pointer; }
+.pregunta.sin-responder { background: var(--error-fondo); }
+.instrucciones { line-height: 1.6; border: 1px solid var(--linea); padding: 14px 18px; background: #fff; }
+
+/* Menú principal */
+.menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-top: 10px; }
+.menu a { display: block; border: 2px solid var(--borde); padding: 16px; text-decoration: none; color: var(--texto); background: #fff; }
+.menu a:hover { background: #f0f0ec; }
+.menu a b { display: block; margin-bottom: 4px; }
+.menu a span { font-size: 12px; color: var(--suave); }
+.menu a.deshabilitado { border-style: dashed; color: var(--suave); pointer-events: none; }
+
+.dos-columnas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.inline { display: inline; }
+.oculto { display: none !important; }
+.derecha { text-align: right; }
+.chico { font-size: 12px; }
+
+@media print {
+    .barra, .acciones, .no-imprimir { display: none !important; }
+    body { background: #fff; }
+    .ventana { border: none; margin: 0; }
+}

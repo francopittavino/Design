@@ -1,0 +1,29 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Capit@l Humano<c:if test="${not empty tituloPagina}"> - ${tituloPagina}</c:if></title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
+</head>
+<body>
+<div class="barra">
+    <span class="marca">CAPIT@L HUMANO</span>
+    <span>
+        <c:choose>
+            <c:when test="${not empty sessionScope.consultor}">
+                Consultor: ${sessionScope.consultor.apellido}, ${sessionScope.consultor.nombre}
+                &nbsp;|&nbsp; <a href="${pageContext.request.contextPath}/menu">Menú principal</a>
+                &nbsp;|&nbsp; <a href="${pageContext.request.contextPath}/login?accion=salir">Salir</a>
+            </c:when>
+            <c:when test="${not empty sessionScope.cuestionarioDTO}">
+                Candidato: ${sessionScope.cuestionarioDTO.candidato.apellido}, ${sessionScope.cuestionarioDTO.candidato.nombre}
+                &nbsp;|&nbsp; <a href="${pageContext.request.contextPath}/login?accion=salir">Salir</a>
+            </c:when>
+        </c:choose>
+    </span>
+</div>

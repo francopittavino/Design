@@ -1,0 +1,43 @@
+<%-- Ventana modal de mensajes: request attribute "modal" (titulo, icono, lineas, lista, botones) --%>
+<c:if test="${not empty modal}">
+    <div class="modal-fondo" id="modal">
+        <div class="modal" role="alertdialog" aria-labelledby="modal-titulo">
+            <div class="titulo" id="modal-titulo">${modal.icono} ${fn:escapeXml(modal.titulo)}</div>
+            <div class="cuerpo">
+                <span class="icono">${modal.icono}</span>
+                <c:forEach var="l" items="${modal.lineas}"><div>${fn:escapeXml(l)}</div></c:forEach>
+                <c:if test="${not empty modal.lista}">
+                    <ul><c:forEach var="l" items="${modal.lista}"><li><b>${fn:escapeXml(l)}</b></li></c:forEach></ul>
+                </c:if>
+            </div>
+            <div class="botonera">
+                <c:forEach var="b" items="${modal.botones}">
+                    <c:choose>
+                        <c:when test="${empty b.accion}">
+                            <button type="button" class="primario" onclick="document.getElementById('modal').remove()" autofocus>${b.texto}</button>
+                        </c:when>
+                        <c:otherwise>
+                            <form method="post" action="${b.accion}" class="inline">
+                                <c:forEach var="p" items="${b.parametros}"><input type="hidden" name="${p.key}" value="${fn:escapeXml(p.value)}"></c:forEach>
+                                <button type="submit" class="primario">${b.texto}</button>
+                            </form>
+                        </c:otherwise>
+                    </c:choose>
+                </c:forEach>
+            </div>
+        </div>
+    </div>
+</c:if>
+<script>
+    // Requerimientos especiales: <Enter> sobre un botón = click (nativo en el navegador)
+    // y el ingreso de datos literales SIEMPRE en mayúsculas.
+    document.querySelectorAll('input[type=text]:not(.sin-mayus), textarea').forEach(function (el) {
+        el.addEventListener('input', function () {
+            var s = el.selectionStart, e = el.selectionEnd;
+            el.value = el.value.toUpperCase();
+            try { el.setSelectionRange(s, e); } catch (x) {}
+        });
+    });
+</script>
+</body>
+</html>

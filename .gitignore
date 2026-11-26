@@ -1,2 +1,8 @@
 # Notas de sesión locales (no se versionan)
 .agents/session-notes/
+
+# Compilados de Maven
+capital-humano/target/
+
+# Volcados de crash de Git Bash
+*.stackdump

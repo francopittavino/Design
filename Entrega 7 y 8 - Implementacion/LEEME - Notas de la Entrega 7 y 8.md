@@ -68,8 +68,16 @@ transiciones de estado del cuestionario (tiempo, accesos, días sin contestar), 
 
 ## Diferencias entre el diseño y la implementación
 
-El enunciado pide que el desarrollo se adecúe al diseño. Estas son las diferencias, con el diagrama que
-hay que actualizar:
+El enunciado pide que el desarrollo se adecúe al diseño. Al implementar aparecieron las diferencias de
+abajo y **ya se pasaron a los diagramas**: el diagrama de clases (`diagrama corregido.puml` en la raíz del
+repo, con su imagen `DiagramaClasesTP2026.png/.svg`) y los de secuencia del CU020, CU021 y CU025
+(carpeta de la Entrega 5) y del CU026 y CU028 (carpeta de la Entrega 6). Hoy el diagrama y el código
+coinciden 1:1: todas las clases y todos los métodos del diagrama existen en el código (se verificó con un
+script). Las únicas clases del código que no se dibujan son las de infraestructura técnica (ConexionBD,
+Catalogo, Mapeos, Configuracion, PantallaBase, Modal, FiltroSesion y las excepciones); una nota del
+diagrama lo aclara.
+
+Los cambios fueron:
 
 **Diagrama de clases**
 - `Cuestionario.accesosMaximos`: estaba en el DER pero faltaba en el diagrama de clases.
@@ -88,13 +96,43 @@ hay que actualizar:
 - Exportadores, `imprimirOrdenMerito` y `exportarResultados` reciben un `OutputStream` en vez de una ruta,
   porque en una aplicación web el archivo se descarga y el usuario elige dónde guardarlo.
 
-**Diagramas de secuencia**
-- CU025: `generarCuestionarios` y `evaluarCandidatos` cambian de firma (ver arriba).
-- CU026: `autenticarCandidato` devuelve `CuestionarioDTO`. `guardarRespuestas` vuelve a verificar
-  el tiempo antes de guardar, por si se vence mientras el candidato responde.
-- CU028: el Bridge recibe los datos ya armados por sección (`Map<String, List<List<String>>>`).
+- Se agregaron al diagrama las implementaciones de los subsistemas externos que usa el TP:
+  `AutenticacionLDAPSimulada`, `ServicioIANoDisponible`, `ImportadorCandidatosNoImplementado` y
+  `ExportadorResultadosArchivo`.
 
-**Fuera de alcance**
+**Diagramas de secuencia**
+- CU020: una sola consulta `PreguntaDAO.buscarPorCriterios` (corrección del auxiliar, ver abajo).
+- CU021: `crearPregunta(dto, usuario)`, `OpcionRespuestaDAO.buscarPorId` y el registro de auditoría.
+- CU025: `GestorPuestos.obtenerDetalle`, `competenciasNoEvaluables` (9.A), `generarClaves`,
+  `evaluarCandidatos(claves, puesto, consultor)` (vuelve a verificar que nadie tenga un cuestionario activo),
+  `crearCuestionarios(claves, tiempoMax, accesosMaximos)`, `nombreArchivoClaves` y la exportación por `OutputStream`.
+- CU026: `autenticarCandidato` devuelve `CuestionarioDTO`. `guardarRespuestas` vuelve a verificar
+  el tiempo antes de guardar, por si se vence mientras el candidato responde. Al finalizar se verifica que
+  no queden bloques sin responder y los puntajes se calculan sobre `getFactoresEvaluados`.
+- CU028: el puesto se toma de la evaluación, el Bridge recibe los datos ya armados por sección
+  (`Map<String, List<List<String>>>`) y `tieneCuestionariosCompletos()` lo consulta la pantalla después de emitir.
+
+## Correcciones del auxiliar aplicadas
+
+- **Diagrama de clases y DER** ("ModeloEvaluacion no es necesario"; "CaracteristicaPuesto y PonderacionItem
+  son N:M con atributos, revisen los DAOs"): corregidos en la Entrega 6 y respetados en el código
+  (sin `ModeloEvaluacion`, sin DAO propio para esas dos clases).
+- **"¿OrdenMerito es entidad de negocio? No debe estar en el Gestor ni en la UI"**: `OrdenMerito` es una clase
+  propia (paquete `reportes`, lado abstracción del Bridge). El gestor solo la arma y la pantalla solo la muestra.
+  No se persiste: se calcula cada vez a partir de los cuestionarios.
+- **Diagramas de secuencia de la Entrega 5** (CU020 buscar solo por nombre y error sin criterios; CU021 acceso
+  a los DAOs; CU025 cuestionarios generados dos veces y `evaluarCandidatos` con dos significados): corregidos
+  en los diagramas y en el código. El detalle está en el LEEME de la Entrega 5.
+
+## Clases del diseño fuera del alcance de estas etapas
+
+Para que el código tenga todo lo diseñado, las clases y métodos del diagrama de clases de los CU que no entran
+en las Etapas 7 y 8 están como **esqueletos**: tienen sus atributos y firmas, pero el cuerpo lanza
+`UnsupportedOperationException("CUxxx: fuera del alcance de las Etapas 7 y 8")`.
+
+- CU006/007 (importar candidatos y exportar resultados), CU008 a CU019 y CU024/029 a CU031 (ABM de puestos,
+  competencias, factores y opciones), CU022/023 (modificar y dar de baja pregunta), CU027 (reporte comparativo),
+  CU032 (proceso batch: `GestorFinalizacion`, `InterfazBatch`) y CU033 (pregunta con IA).
+- Las pantallas de esos CU extienden `PantallaBase` pero no tienen ruta (`@WebServlet`): en el menú se ven
+  deshabilitadas.
 - El LDAP está simulado y el servicio de IA siempre responde "no disponible" (mensaje del CU021).
-- No se implementaron el reporte comparativo, el importador de candidatos ni los métodos de DAO de los
-  CU que no entran en estas etapas. En el menú se ven deshabilitados.

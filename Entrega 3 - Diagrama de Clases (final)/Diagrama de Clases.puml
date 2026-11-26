@@ -1,0 +1,882 @@
+@startuml DiagramaClasesTP2026
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam packageFontSize 13
+skinparam linetype ortho
+skinparam ranksep 60
+skinparam nodesep 40
+skinparam class {
+    BackgroundColor<<entidad>> #EAF4E8
+    BorderColor<<entidad>> #3D5A00
+    HeaderBackgroundColor<<entidad>> #D5E8D4
+    
+    BackgroundColor<<gestor>> #FFF5EB
+    BorderColor<<gestor>> #7D4E00
+    HeaderBackgroundColor<<gestor>> #FFE6CC
+    
+    BackgroundColor<<interfaz>> #EBF5FB
+    BorderColor<<interfaz>> #006EAF
+    HeaderBackgroundColor<<interfaz>> #DAE8FC
+    
+    BackgroundColor<<boundary>> #F5EEF8
+    BorderColor<<boundary>> #7D3C98
+    HeaderBackgroundColor<<boundary>> #E8DAEF
+    
+    BackgroundColor<<enum>> #EAF4E8
+    BorderColor<<enum>> #3D5A00
+    HeaderBackgroundColor<<enum>> #D5E8D4
+    
+    ' DTO y DAO
+    BackgroundColor<<dto>> #E1F5FE
+    BorderColor<<dto>> #0288D1
+    HeaderBackgroundColor<<dto>> #B3E5FC
+    
+    BackgroundColor<<dao>> #FFF8E1
+    BorderColor<<dao>> #F57F17
+    HeaderBackgroundColor<<dao>> #FFECB3
+
+    ' Patrones GoF
+    BackgroundColor<<singleton>> #FFF3E0
+    BorderColor<<singleton>> #E65100
+    HeaderBackgroundColor<<singleton>> #FFE0B2
+    
+    BackgroundColor<<state>> #F3E5F5
+    BorderColor<<state>> #7B1FA2
+    HeaderBackgroundColor<<state>> #E1BEE7
+    
+    BackgroundColor<<bridge>> #E8F5E9
+    BorderColor<<bridge>> #2E7D32
+    HeaderBackgroundColor<<bridge>> #C8E6C9
+    
+    BackgroundColor<<facade>> #EDE7F6
+    BorderColor<<facade>> #512DA8
+    HeaderBackgroundColor<<facade>> #D1C4E9
+    
+    BackgroundColor<<mediator>> #FCE4EC
+    BorderColor<<mediator>> #C2185B
+    HeaderBackgroundColor<<mediator>> #F8BBD0
+}
+
+' ============================================================
+' ENUMERACIONES
+' ============================================================
+enum TipoCompetencia <<enum>> {
+TECNICA
+ACTITUDINAL
+}
+enum TipoDocumento <<enum>> {
+DNI
+LE
+LC
+PP
+}
+enum Genero <<enum>> {
+H
+M
+}
+
+' ============================================================
+' DATA TRANSFER OBJECTS (DTOs - transporte Gestor <-> UI)
+' ============================================================
+class CandidatoGestionDTO <<dto>> {
+- nroCandidato : String
+- apellido : String
+- nombre : String
+- tipoDoc : String
+- nroDoc : String
+- email : String
+- escolaridad : String
++ getters()
++ setters()
+}
+class CandidatoCuestionarioDTO <<dto>> {
+- nroCandidato : String
+- apellido : String
+- nombre : String
+- token : String
++ getters()
++ setters()
+}
+class ResultadoImportacionDTO <<dto>> {
+- cantCreados : int
+- cantActualizados : int
+- cantEliminados : int
++ getters()
++ setters()
+}
+class ResultadoComparativoDTO <<dto>> {
+- apellido : String
+- nombre : String
+- tipoDocumento : String
+- nroDocumento : String
+- nombreCompetencia : String
+- puntajeRequerido : double
+- puntajeObtenido : double
++ getters()
++ setters()
+}
+class PuestoDTO <<dto>> {
+- id : int
+- codigo : String
+- nombre : String
+- empresa : String
++ getters()
++ setters()
+}
+class CompetenciaDTO <<dto>> {
+- id : int
+- codigo : String
+- nombre : String
++ getters()
++ setters()
+}
+class FactorDTO <<dto>> {
+- id : int
+- codigo : String
+- nombre : String
++ getters()
++ setters()
+}
+class PreguntaDTO <<dto>> {
+- id : int
+- nombre : String
+- enunciado : String
++ getters()
++ setters()
+}
+class OpcionRespuestaDTO <<dto>> {
+- id : int
+- nombre : String
++ getters()
++ setters()
+}
+class EvaluacionDTO <<dto>> {
+- id : int
+- candidato : String
+- puesto : String
+- estado : String
++ getters()
++ setters()
+}
+
+' ============================================================
+' PATRÓN FACADE (Fachada para Subsistemas Externos)
+' ============================================================
+interface IAutenticacionLDAP <<interfaz>> {
++ autenticar(usuario: String, password: String) : Consultor
++ validarSesion(token: String) : bool
+}
+interface IImportadorCandidatos <<interfaz>> {
++ importar(rutaArchivo: String) : ResultadoImport
++ validarFormato(rutaArchivo: String) : bool
+}
+interface IExportadorResultados <<interfaz>> {
++ exportarCSV(puesto: Puesto, ruta: String) : bool
++ exportarExcel(candidatos: List, ruta: String) : bool
+}
+interface IServicioIA <<interfaz>> {
++ generarPregunta(competencia: Competencia, factor: Factor) : Pregunta
++ generarPuesto(nombre: String) : Puesto
+}
+
+class ServiciosExternosFacade <<facade>> {
+- authLDAP : IAutenticacionLDAP
+- servicioIA : IServicioIA
+- importador : IImportadorCandidatos
+- exportador : IExportadorResultados
+--
++ autenticarConsultor(usr: String, pass: String) : Consultor
++ generarPreguntaIA(comp: Competencia, factor: Factor) : Pregunta
++ importarCandidatos(ruta: String) : ResultadoImport
++ exportarResultados(puesto: Puesto, formato: String, ruta: String) : bool
+}
+
+ServiciosExternosFacade ..> IAutenticacionLDAP : usa
+ServiciosExternosFacade ..> IServicioIA : usa
+ServiciosExternosFacade ..> IImportadorCandidatos : usa
+ServiciosExternosFacade ..> IExportadorResultados : usa
+
+' ============================================================
+' PATRÓN BRIDGE (Jerarquía de Reportes y Formatos)
+' ============================================================
+interface ExportadorFormato <<interfaz>> <<bridge>> {
++ exportar(titulo: String, datos: Map) : bool
+}
+class ExportadorCSV <<bridge>> implements ExportadorFormato {
++ exportar(titulo: String, datos: Map) : bool
+}
+class ExportadorExcel <<bridge>> implements ExportadorFormato {
++ exportar(titulo: String, datos: Map) : bool
+}
+class ExportadorPDF <<bridge>> implements ExportadorFormato {
++ exportar(titulo: String, datos: Map) : bool
+}
+
+abstract class Reporte <<entidad>> <<bridge>> {
+# formatoExportacion : ExportadorFormato
+--
++ {abstract} generar() : void
++ setFormato(f: ExportadorFormato) : void
+}
+
+class ReporteComparativo <<entidad>> <<bridge>> extends Reporte {
+- candidato : Candidato
+- puesto : Puesto
+- cuestionario : Cuestionario
+--
++ generar() : void
++ getDatosGrafico() : Map
++ imprimir() : void
+}
+
+class OrdenMerito <<entidad>> <<bridge>> extends Reporte {
+- puesto : Puesto
+--
++ generar() : void
++ imprimir() : void
+}
+
+Reporte "1" o-- "1" ExportadorFormato : formatoExportacion
+
+' ============================================================
+' PATRÓN STATE (Ciclo de Vida de Cuestionario)
+' ============================================================
+interface EstadoCuestionarioState <<interfaz>> <<state>> {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+
+class EstadoActivo <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+class EstadoEnProceso <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+class EstadoCompleto <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+class EstadoIncompleto <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+class EstadoSinContestar <<entidad>> <<state>> implements EstadoCuestionarioState {
++ responder(c: Cuestionario, resp: List) : void
++ finalizar(c: Cuestionario) : void
++ verificarTiempo(c: Cuestionario) : bool
++ getNombreEstado() : String
+}
+
+' ============================================================
+' DATA ACCESS OBJECTS (DAOs) - Acceso a datos
+' ============================================================
+interface CandidatoDAO <<interfaz>> <<dao>> {
++ importar(candidatos: List<Candidato>) : void
++ buscarPorId(id: int) : Candidato
++ buscarPorNroCandidato(nro: String) : Candidato
++ buscarPorDocumento(tipo: String, nro: String) : Candidato
++ buscarPorCriterios(apellido: String, nombre: String, nro: String) : List<Candidato>
++ guardar(c: Candidato) : void
++ actualizarClaveAcceso(nroCandidato: String, clave: String) : void
+}
+class CandidatoDAOImpl <<dao>> {}
+CandidatoDAO <|.. CandidatoDAOImpl
+
+interface PuestoDAO <<interfaz>> <<dao>> {
++ buscarPorId(id: int) : Puesto
++ buscarPorFiltros(filtros: Map) : List<Puesto>
++ guardar(puesto: Puesto) : void
++ actualizar(puesto: Puesto) : void
++ eliminarLogico(id: int) : void
+}
+class PuestoDAOImpl <<dao>> {}
+PuestoDAO <|.. PuestoDAOImpl
+
+interface CompetenciaDAO <<interfaz>> <<dao>> {
++ buscarPorId(id: int) : Competencia
++ listarTodas() : List<Competencia>
++ buscarPorNombre(nombre: String) : List<Competencia>
++ guardar(comp: Competencia) : void
++ actualizar(comp: Competencia) : void
++ eliminarLogico(id: int) : void
+}
+class CompetenciaDAOImpl <<dao>> {}
+CompetenciaDAO <|.. CompetenciaDAOImpl
+
+interface FactorDAO <<interfaz>> <<dao>> {
++ buscarPorId(id: int) : Factor
++ buscarPorCompetencia(idComp: int) : List<Factor>
++ guardar(factor: Factor) : void
++ actualizar(factor: Factor) : void
++ eliminarLogico(id: int) : void
+}
+class FactorDAOImpl <<dao>> {}
+FactorDAO <|.. FactorDAOImpl
+
+interface PreguntaDAO <<interfaz>> <<dao>> {
++ buscarPorId(id: int) : Pregunta
++ buscarPorFactor(idFactor: int) : List<Pregunta>
++ guardar(pregunta: Pregunta) : void
++ actualizar(pregunta: Pregunta) : void
++ eliminarLogico(id: int) : void
+}
+class PreguntaDAOImpl <<dao>> {}
+PreguntaDAO <|.. PreguntaDAOImpl
+
+interface OpcionRespuestaDAO <<interfaz>> <<dao>> {
++ buscarPorId(id: int) : OpcionDeRespuesta
++ listarTodas() : List<OpcionDeRespuesta>
++ buscarPorNombre(nombre: String) : List<OpcionDeRespuesta>
++ guardar(opcion: OpcionDeRespuesta) : void
++ actualizar(opcion: OpcionDeRespuesta) : void
++ eliminarLogico(id: int) : void
+}
+class OpcionRespuestaDAOImpl <<dao>> {}
+OpcionRespuestaDAO <|.. OpcionRespuestaDAOImpl
+
+interface CuestionarioDAO <<interfaz>> <<dao>> {
++ buscarPorCandidato(idCandidato: int) : Cuestionario
++ buscarPorId(id: int) : Cuestionario
++ guardar(cuestionario: Cuestionario) : void
++ actualizarEstado(id: int, nombreEstado: String) : void
+}
+class CuestionarioDAOImpl <<dao>> {}
+CuestionarioDAO <|.. CuestionarioDAOImpl
+
+interface EvaluacionDAO <<interfaz>> <<dao>> {
++ guardar(eval: Evaluacion) : void
++ buscarPorPuesto(idPuesto: int) : List<Evaluacion>
+}
+class EvaluacionDAOImpl <<dao>> {}
+EvaluacionDAO <|.. EvaluacionDAOImpl
+
+interface RegistroAuditoriaDAO <<interfaz>> <<dao>> {
++ guardar(registro: RegistroAuditoria) : void
+}
+class RegistroAuditoriaDAOImpl <<dao>> {}
+RegistroAuditoriaDAO <|.. RegistroAuditoriaDAOImpl
+
+interface RegistroEjecucionBatchDAO <<interfaz>> <<dao>> {
++ guardar(registro: RegistroEjecucionBatch) : void
+}
+class RegistroEjecucionBatchDAOImpl <<dao>> {}
+RegistroEjecucionBatchDAO <|.. RegistroEjecucionBatchDAOImpl
+
+' ============================================================
+' ENTIDADES DEL DOMINIO
+' ============================================================
+class Empresa <<entidad>> {
+- id : int
+- nombre : String
+- activo : bool
+}
+class Consultor <<entidad>> {
+- id : int
+- usuario : String
+- nombre : String
+- apellido : String
+- activo : bool
+}
+class Candidato <<entidad>> {
+- id : int
+- nroCandidato : String
+- apellido : String
+- nombre : String
+- tipoDoc : TipoDocumento
+- nroDoc : String
+- fechaNacimiento : Date
+- genero : Genero
+- nacionalidad : String
+- email : String
+- escolaridad : String
+- activo : bool
+- claveAcceso : String
+--
++ tieneCuestionarioActivo() : bool
+}
+class ResultadoImport <<entidad>> {
+- cantCreados : int
+- cantActualizados : int
+- cantEliminados : int
+--
++ getResumen() : String
+}
+class Puesto <<entidad>> {
+- id : int
+- codigo : String
+- nombre : String
+- descripcion : String
+- activo : bool
+- fechaBaja : Date
+--
++ puedeEliminarse() : bool
++ todasCompetenciasEvaluables() : bool
+}
+class CaracteristicaPuesto <<entidad>> {
+- id : int
+- ponderacionMinima : double
+}
+class Competencia <<entidad>> {
+- id : int
+- codigo : String
+- nombre : String
+- descripcion : String
+- tipo : TipoCompetencia
+- activo : bool
+--
++ puedeEliminarse() : bool
++ puedeEvaluarse() : bool
+}
+class Factor <<entidad>> {
+- id : int
+- codigo : String
+- nombre : String
+- descripcion : String
+- nroOrden : int
+- activo : bool
+- fechaBaja : Date
+--
++ puedeEliminarse() : bool
++ tieneSuficientesPreguntas() : bool
+}
+class OpcionDeRespuesta <<entidad>> {
+- id : int
+- nombre : String
+- descripcion : String
+- activo : bool
+--
++ puedeEliminarse() : bool
+}
+class ItemOpcionDeRespuesta <<entidad>> {
+- id : int
+- orden : int
+- descripcion : String
+- activo : bool
+}
+class Pregunta <<entidad>> {
+- id : int
+- nombre : String
+- enunciado : String
+- descripcion : String
+- activo : bool
+- fechaBaja : Date
+--
++ puedeEliminarse() : bool
+}
+class PonderacionItem <<entidad>> {
+- id : int
+- valor : double
+}
+class Evaluacion <<entidad>> {
+- id : int
+- fechaCreacion : DateTime
+- bloqueTamanio : int
+--
++ crearCuestionarios() : void
+}
+class ModeloEvaluacion <<entidad>> {
+- id : int
+- fechaSnapshot : DateTime
+}
+class Cuestionario <<entidad>> {
+- id : int
+- clave : String
+- estadoActual : EstadoCuestionarioState
+- fechaInicio : DateTime
+- fechaFin : DateTime
+- fechaCambioEstado : DateTime
+- fechaUltimoAcceso : DateTime
+- cantAccesos : int
+- tiempoMax : int
+--
++ responder(resp: List) : void
++ finalizar() : void
++ estaActivo() : bool
++ estaEnProceso() : bool
++ estaCompleto() : bool
++ superaTiempoMaximo() : bool
++ setEstadoActual(estado: EstadoCuestionarioState) : void
+}
+class PreguntaCuestionario <<entidad>> {
+- id : int
+- nroOrden : int
+- nroBloque : int
+}
+class RespuestaCandidata <<entidad>> {
+- id : int
+- ponderacion : double
+}
+class ResultadoCompetencia <<entidad>> {
+- id : int
+- puntajeObtenido : double
+--
++ superaPonderacionMinima(min: double) : bool
+}
+class ResultadoFactor <<entidad>> {
+- id : int
+- puntajeObtenido : double
+}
+class ItemOrdenMerito <<entidad>> {
+- posicion : int
+- puntajeObtenido : double
+- cumplePonderaciones : bool
+- fechaInicio : DateTime
+- fechaFin : DateTime
+- ultimoAcceso : DateTime
+- cantAccesos : int
+--
++ getDatosAdicionales() : String
+}
+class RegistroAuditoria <<entidad>> {
+- id : int
+- usuario : String
+- entidad : String
+- accion : String
+- fechaHora : DateTime
+}
+class RegistroEjecucionBatch <<entidad>> {
+- id : int
+- fechaHora : DateTime
+- accion : String
+}
+
+' ============================================================
+' PATRÓN MEDIATOR & SINGLETON (Gestores de Lógica)
+' ============================================================
+interface ICuestionarioMediator <<interfaz>> <<mediator>> {
++ notificarRespuesta(cuestionario: Cuestionario, pregunta: PreguntaCuestionario, respuesta: RespuestaCandidata) : void
++ notificarCambioEstado(cuestionario: Cuestionario, nuevoEstado: EstadoCuestionarioState) : void
+}
+
+class GestorAutenticacion <<gestor>> <<singleton>> {
+- {static} instance : GestorAutenticacion
+- serviciosFacade : ServiciosExternosFacade
+- candidatoDAO : CandidatoDAO
+- cuestionarioDAO : CuestionarioDAO
+--
++ {static} getInstance() : GestorAutenticacion
++ autenticarConsultor(usuario: String, password: String) : boolean
++ autenticarCandidato(tipoDoc: String, nroDoc: String, clave: String) : CandidatoCuestionarioDTO
++ cerrarSesion() : void
+}
+class GestorPuestos <<gestor>> <<singleton>> {
+- {static} instance : GestorPuestos
+- puestoDAO : PuestoDAO
+- auditoriaDAO : RegistroAuditoriaDAO
+- serviciosFacade : ServiciosExternosFacade
+--
++ {static} getInstance() : GestorPuestos
++ buscarPuestos(filtros: Map) : List<PuestoDTO>
++ crearPuesto(datos: PuestoDTO) : PuestoDTO
++ modificarPuesto(id: int, datos: PuestoDTO) : PuestoDTO
++ darDeBajaPuesto(id: int) : void
++ generarConIA(nombre: String) : PuestoDTO
++ validar(p: PuestoDTO) : List<String>
+}
+class GestorCompetencias <<gestor>> <<singleton>> {
+- {static} instance : GestorCompetencias
+- competenciaDAO : CompetenciaDAO
+- auditoriaDAO : RegistroAuditoriaDAO
+--
++ {static} getInstance() : GestorCompetencias
++ buscarCompetencias(nombre: String) : List<CompetenciaDTO>
++ crearCompetencia(datos: CompetenciaDTO) : CompetenciaDTO
++ modificarCompetencia(id: int, datos: CompetenciaDTO) : CompetenciaDTO
++ darDeBajaCompetencia(id: int) : void
++ validar(c: CompetenciaDTO) : List<String>
+}
+class GestorFactores <<gestor>> <<singleton>> {
+- {static} instance : GestorFactores
+- factorDAO : FactorDAO
+- preguntaDAO : PreguntaDAO
+- auditoriaDAO : RegistroAuditoriaDAO
+--
++ {static} getInstance() : GestorFactores
++ buscarFactores(filtros: Map) : List<FactorDTO>
++ crearFactor(datos: FactorDTO) : FactorDTO
++ modificarFactor(id: int, datos: FactorDTO) : FactorDTO
++ darDeBajaFactor(id: int) : void
++ validar(f: FactorDTO) : List<String>
+}
+class GestorPreguntas <<gestor>> <<singleton>> {
+- {static} instance : GestorPreguntas
+- preguntaDAO : PreguntaDAO
+- auditoriaDAO : RegistroAuditoriaDAO
+- serviciosFacade : ServiciosExternosFacade
+--
++ {static} getInstance() : GestorPreguntas
++ buscarPreguntas(filtros: Map) : List<PreguntaDTO>
++ crearPregunta(datos: PreguntaDTO) : PreguntaDTO
++ modificarPregunta(id: int, datos: PreguntaDTO) : PreguntaDTO
++ darDeBajaPregunta(id: int) : void
++ generarConIA(comp: CompetenciaDTO, factor: FactorDTO) : PreguntaDTO
++ validar(p: PreguntaDTO) : List<String>
+}
+class GestorOpcionesRespuesta <<gestor>> <<singleton>> {
+- {static} instance : GestorOpcionesRespuesta
+- opcionDAO : OpcionRespuestaDAO
+- auditoriaDAO : RegistroAuditoriaDAO
+--
++ {static} getInstance() : GestorOpcionesRespuesta
++ buscarOpciones(nombre: String) : List<OpcionRespuestaDTO>
++ crearOpcion(datos: OpcionRespuestaDTO) : OpcionRespuestaDTO
++ modificarOpcion(id: int, datos: OpcionRespuestaDTO) : OpcionRespuestaDTO
++ darDeBajaOpcion(id: int) : void
++ validar(o: OpcionRespuestaDTO) : List<String>
+}
+class GestorCandidatos <<gestor>> <<singleton>> {
+- {static} instance : GestorCandidatos
+- candidatoDAO : CandidatoDAO
+- serviciosFacade : ServiciosExternosFacade
+--
++ {static} getInstance() : GestorCandidatos
++ buscarCandidatos(filtros: Map) : List<CandidatoGestionDTO>
++ importarCandidatos(archivoCsv: String) : ResultadoImportacionDTO
++ evaluarCandidatos(nrosCandidatos: List, puesto: PuestoDTO) : List<CandidatoGestionDTO>
+}
+class GestorEvaluacion <<gestor>> <<singleton>> {
+- {static} instance : GestorEvaluacion
+- evaluacionDAO : EvaluacionDAO
+- serviciosFacade : ServiciosExternosFacade
+--
++ {static} getInstance() : GestorEvaluacion
++ evaluarCandidatos(candidatos: List<CandidatoGestionDTO>, puesto: PuestoDTO) : EvaluacionDTO
++ generarCuestionarios(eval: EvaluacionDTO) : List<CandidatoCuestionarioDTO>
++ exportarClaves(eval: EvaluacionDTO, ruta: String) : bool
++ exportarResultados(puesto: PuestoDTO, ruta: String) : bool
++ validarCompetenciasEvaluables(puesto: PuestoDTO) : bool
+}
+class GestorCuestionario <<gestor>> <<singleton>> <<mediator>> implements ICuestionarioMediator {
+- {static} instance : GestorCuestionario
+- cuestionarioDAO : CuestionarioDAO
+--
++ {static} getInstance() : GestorCuestionario
++ notificarRespuesta(cuestionario: Cuestionario, pregunta: PreguntaCuestionario, respuesta: RespuestaCandidata) : void
++ notificarCambioEstado(cuestionario: Cuestionario, nuevoEstado: EstadoCuestionarioState) : void
++ obtenerDatosCandidato(claveAcceso: String) : CandidatoCuestionarioDTO
++ obtenerBloque(cuest: EvaluacionDTO, nro: int) : List<PreguntaDTO>
++ guardarRespuestas(cuest: EvaluacionDTO, resp: List) : void
++ finalizarCuestionario(cuest: EvaluacionDTO) : void
++ calcularPuntajes(cuest: EvaluacionDTO) : void
++ verificarTiempo(cuest: EvaluacionDTO) : bool
+}
+class GestorReportes <<gestor>> <<singleton>> {
+- {static} instance : GestorReportes
+- cuestionarioDAO : CuestionarioDAO
+- evaluacionDAO : EvaluacionDAO
+--
++ {static} getInstance() : GestorReportes
++ emitirReporteComparativo(nroCandidato: String, puesto: PuestoDTO) : ResultadoComparativoDTO
++ emitirOrdenMerito(puesto: PuestoDTO, evaluaciones: List<EvaluacionDTO>) : OrdenMerito
+}
+class GestorFinalizacion <<gestor>> <<singleton>> {
+- {static} instance : GestorFinalizacion
+- cuestionarioDAO : CuestionarioDAO
+- registroEjecucionBatchDAO : RegistroEjecucionBatchDAO
+--
++ {static} getInstance() : GestorFinalizacion
++ ejecutar() : void
++ finalizarVencidos() : void
++ marcarSinContestar() : void
+}
+
+' ============================================================
+' BOUNDARIES (PANTALLAS Y FORMULARIOS)
+' ============================================================
+class PantallaMenuPrincipal <<boundary>> {}
+class PantallaLogin <<boundary>> {}
+class PantallaImportarCandidatos <<boundary>> {}
+class PantallaExportarResultados <<boundary>> {}
+class PantallaGestionPuestos <<boundary>> {}
+class FormularioPuesto <<boundary>> {}
+class PantallaGestionCompetencias <<boundary>> {}
+class FormularioCompetencia <<boundary>> {}
+class PantallaGestionFactores <<boundary>> {}
+class FormularioFactor <<boundary>> {}
+class PantallaGestionPreguntas <<boundary>> {}
+class FormularioPregunta <<boundary>> {}
+class VentanaGenerarPreguntaIA <<boundary>> {}
+class PantallaGestionOpciones <<boundary>> {}
+class FormularioOpcionRespuesta <<boundary>> {}
+class PantallaEvaluarCandidatos <<boundary>> {}
+class PantallaCompletarCuestionario <<boundary>> {}
+class PantallaReporteComparativo <<boundary>> {}
+class PantallaOrdenMerito <<boundary>> {}
+class InterfazBatch <<boundary>> {}
+
+' ============================================================
+' RELACIONES ENTRE ENTIDADES DEL DOMINIO Y PATRÓN STATE
+' ============================================================
+Candidato --> TipoDocumento
+Candidato --> Genero
+Empresa "1" --> "*" Puesto
+Empresa "1" --> "*" Consultor
+Puesto "1" *-- "*" CaracteristicaPuesto
+CaracteristicaPuesto "*" --> "1" Competencia
+Competencia "1" *-- "*" Factor
+Competencia --> TipoCompetencia
+Factor "1" *-- "*" Pregunta
+OpcionDeRespuesta "1" *-- "*" ItemOpcionDeRespuesta
+Pregunta "*" --> "1" OpcionDeRespuesta
+Pregunta "1" *-- "*" PonderacionItem
+PonderacionItem "*" --> "1" ItemOpcionDeRespuesta
+Evaluacion "*" --> "1" Puesto
+Evaluacion "*" --> "1" Consultor
+Evaluacion "1" --> "1" ModeloEvaluacion
+Evaluacion "1" *-- "*" Cuestionario
+Cuestionario "*" --> "1" Candidato
+Cuestionario "1" *-- "1" EstadoCuestionarioState : estadoActual
+Cuestionario "1" *-- "*" PreguntaCuestionario
+Cuestionario "1" *-- "*" ResultadoCompetencia
+PreguntaCuestionario "*" --> "1" Pregunta
+PreguntaCuestionario "1" --> "0..1" RespuestaCandidata
+RespuestaCandidata "*" --> "1" ItemOpcionDeRespuesta
+ResultadoCompetencia --> Competencia
+ResultadoCompetencia "1" *-- "*" ResultadoFactor
+ResultadoFactor --> Factor
+OrdenMerito "1" *-- "*" ItemOrdenMerito
+ItemOrdenMerito --> Cuestionario
+ReporteComparativo --> Cuestionario
+ReporteComparativo --> CaracteristicaPuesto
+
+' ============================================================
+' RELACIONES FACADE -> SUBSISTEMAS EXTERNOS
+' ============================================================
+GestorAutenticacion ..> ServiciosExternosFacade : usa
+GestorPuestos ..> ServiciosExternosFacade : usa
+GestorPreguntas ..> ServiciosExternosFacade : usa
+GestorCandidatos ..> ServiciosExternosFacade : usa
+GestorEvaluacion ..> ServiciosExternosFacade : usa
+
+' ============================================================
+' RELACIONES GESTORES -> DAOs (Inversión de Dependencias: "usa")
+' ============================================================
+GestorAutenticacion ..> CandidatoDAO : usa
+GestorAutenticacion ..> CuestionarioDAO : usa
+GestorPuestos ..> PuestoDAO : usa
+GestorPuestos ..> RegistroAuditoriaDAO : usa
+GestorCompetencias ..> CompetenciaDAO : usa
+GestorCompetencias ..> RegistroAuditoriaDAO : usa
+GestorFactores ..> FactorDAO : usa
+GestorFactores ..> PreguntaDAO : usa (baja en cascada)
+GestorFactores ..> RegistroAuditoriaDAO : usa
+GestorPreguntas ..> PreguntaDAO : usa
+GestorPreguntas ..> RegistroAuditoriaDAO : usa
+GestorOpcionesRespuesta ..> OpcionRespuestaDAO : usa
+GestorOpcionesRespuesta ..> RegistroAuditoriaDAO : usa
+GestorCandidatos ..> CandidatoDAO : usa
+GestorEvaluacion ..> EvaluacionDAO : usa
+GestorCuestionario ..> CuestionarioDAO : usa
+GestorReportes ..> EvaluacionDAO : usa
+GestorReportes ..> CuestionarioDAO : usa
+GestorFinalizacion ..> CuestionarioDAO : usa
+GestorFinalizacion ..> RegistroEjecucionBatchDAO : usa
+
+' ============================================================
+' RELACIONES GESTORES -> ENTIDADES ("usa (reglas de negocio)")
+' ============================================================
+GestorCandidatos ..> Candidato : usa (reglas de negocio)
+GestorCuestionario ..> Candidato : usa (valida claveAcceso)
+GestorReportes ..> Candidato : usa
+GestorPuestos ..> Puesto : usa (reglas de negocio)
+GestorCompetencias ..> Competencia : usa
+GestorFactores ..> Factor : usa
+GestorPreguntas ..> Pregunta : usa
+GestorOpcionesRespuesta ..> OpcionDeRespuesta : usa
+GestorEvaluacion ..> Evaluacion : usa
+GestorFinalizacion ..> RegistroEjecucionBatch : usa
+GestorFinalizacion ..> Cuestionario : usa
+GestorReportes ..> OrdenMerito : arma
+GestorReportes ..> ReporteComparativo : arma
+
+' ============================================================
+' RELACIONES GESTORES -> DTOs ("arma / recibe" o "arma")
+' ============================================================
+GestorCandidatos ..> CandidatoGestionDTO : arma / recibe
+GestorCandidatos ..> ResultadoImportacionDTO : arma
+GestorCuestionario ..> CandidatoCuestionarioDTO : arma
+GestorReportes ..> ResultadoComparativoDTO : arma
+GestorPuestos ..> PuestoDTO : arma / recibe
+GestorCompetencias ..> CompetenciaDTO : arma / recibe
+GestorFactores ..> FactorDTO : arma / recibe
+GestorPreguntas ..> PreguntaDTO : arma / recibe
+GestorOpcionesRespuesta ..> OpcionRespuestaDTO : arma / recibe
+GestorEvaluacion ..> EvaluacionDTO : arma / recibe
+
+' ============================================================
+' RELACIONES DAOs -> ENTIDADES (Los DAOs "usa" Entidades puras)
+' ============================================================
+CandidatoDAO ..> Candidato : usa
+PuestoDAO ..> Puesto : usa
+CompetenciaDAO ..> Competencia : usa
+FactorDAO ..> Factor : usa
+PreguntaDAO ..> Pregunta : usa
+OpcionRespuestaDAO ..> OpcionDeRespuesta : usa
+CuestionarioDAO ..> Cuestionario : usa
+EvaluacionDAO ..> Evaluacion : usa
+RegistroAuditoriaDAO ..> RegistroAuditoria : usa
+RegistroEjecucionBatchDAO ..> RegistroEjecucionBatch : usa
+
+' ============================================================
+' RELACIONES BOUNDARIES -> GESTORES
+' ============================================================
+PantallaLogin ..> GestorAutenticacion
+PantallaImportarCandidatos ..> GestorCandidatos
+PantallaExportarResultados ..> GestorEvaluacion
+PantallaExportarResultados ..> GestorReportes
+PantallaGestionPuestos ..> GestorPuestos
+FormularioPuesto ..> GestorPuestos
+PantallaGestionCompetencias ..> GestorCompetencias
+FormularioCompetencia ..> GestorCompetencias
+PantallaGestionFactores ..> GestorFactores
+FormularioFactor ..> GestorFactores
+PantallaGestionPreguntas ..> GestorPreguntas
+FormularioPregunta ..> GestorPreguntas
+VentanaGenerarPreguntaIA ..> GestorPreguntas
+PantallaGestionOpciones ..> GestorOpcionesRespuesta
+FormularioOpcionRespuesta ..> GestorOpcionesRespuesta
+PantallaEvaluarCandidatos ..> GestorEvaluacion
+PantallaEvaluarCandidatos ..> GestorCandidatos
+PantallaCompletarCuestionario ..> GestorCuestionario
+PantallaReporteComparativo ..> GestorReportes
+PantallaOrdenMerito ..> GestorReportes
+InterfazBatch ..> GestorFinalizacion
+
+' Navegación entre Pantallas principales
+PantallaMenuPrincipal --> PantallaGestionPuestos : abre >
+PantallaMenuPrincipal --> PantallaGestionCompetencias : abre >
+PantallaMenuPrincipal --> PantallaGestionFactores : abre >
+PantallaMenuPrincipal --> PantallaGestionPreguntas : abre >
+PantallaMenuPrincipal --> PantallaGestionOpciones : abre >
+PantallaMenuPrincipal --> PantallaImportarCandidatos : abre >
+PantallaMenuPrincipal --> PantallaExportarResultados : abre >
+PantallaMenuPrincipal --> PantallaEvaluarCandidatos : abre >
+PantallaMenuPrincipal --> PantallaReporteComparativo : abre >
+PantallaMenuPrincipal --> PantallaOrdenMerito : abre >
+
+' ============================================================
+' RELACIONES BOUNDARIES -> DTOs
+' ============================================================
+PantallaEvaluarCandidatos ..> CandidatoGestionDTO
+PantallaCompletarCuestionario ..> CandidatoCuestionarioDTO
+PantallaImportarCandidatos ..> ResultadoImportacionDTO
+PantallaReporteComparativo ..> ResultadoComparativoDTO
+FormularioPuesto ..> PuestoDTO
+FormularioCompetencia ..> CompetenciaDTO
+FormularioFactor ..> FactorDTO
+FormularioPregunta ..> PreguntaDTO
+FormularioOpcionRespuesta ..> OpcionRespuestaDTO
+
+@enduml

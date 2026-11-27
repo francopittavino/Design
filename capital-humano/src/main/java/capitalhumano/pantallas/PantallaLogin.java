@@ -50,7 +50,7 @@ public class PantallaLogin extends PantallaBase {
             return;
         }
 
-        Consultor consultor = gestor.autenticarConsultor(param(req, "usuario"), req.getParameter("password"));
+        Consultor consultor = gestor.autenticarConsultor(param(req, "usuario").toUpperCase(), req.getParameter("password"));
         if (consultor == null) {
             modal(req, new Modal(Modal.ADVERTENCIA, "Error de autenticación", "El usuario o la contraseña no son válidos").aceptar());
             mostrarFormulario(req, resp, "consultor");

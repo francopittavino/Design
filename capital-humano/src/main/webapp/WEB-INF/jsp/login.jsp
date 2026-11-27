@@ -8,10 +8,10 @@
                 <input type="hidden" name="tipo" value="consultor">
                 <div class="seccion">Ingresar como usuario consultor</div>
                 <div class="campo"><label for="usuario">Usuario</label>
-                    <input type="text" id="usuario" name="usuario" class="sin-mayus" autofocus autocomplete="username"></div>
+                    <input type="text" id="usuario" name="usuario" maxlength="15" autofocus autocomplete="username"></div>
                 <br>
                 <div class="campo"><label for="password">Contraseña</label>
-                    <input type="password" id="password" name="password" autocomplete="current-password"></div>
+                    <input type="password" id="password" name="password" maxlength="20" autocomplete="current-password"></div>
                 <p class="ayuda">La contraseña se valida contra el LDAP de la organización.</p>
                 <div class="acciones">
                     <a class="boton" href="${pageContext.request.contextPath}/login">Volver</a>

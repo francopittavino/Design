@@ -1,5 +1,5 @@
 <%@ include file="_encabezado.jspf" %>
-<div class="ventana">
+<div class="ventana menu-principal">
     <h1>MENÚ PRINCIPAL</h1>
     <div class="menu">
         <a href="${pageContext.request.contextPath}/preguntas"><b>Preguntas</b>

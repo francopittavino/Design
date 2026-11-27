@@ -8,7 +8,7 @@
     <artifactId>capital-humano</artifactId>
     <version>1.0</version>
     <packaging>war</packaging>
-    <name>Capit@l Humano - TP Diseño de Sistemas 2026</name>
+    <name>Capital Humano - TP Diseño de Sistemas 2026</name>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

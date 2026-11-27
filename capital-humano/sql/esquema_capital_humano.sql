@@ -1,5 +1,5 @@
 -- ============================================================
--- Capit@l Humano - esquema_capital_humano.sql (PostgreSQL 16)
+-- Capital Humano - esquema_capital_humano.sql (PostgreSQL 16)
 -- Generado a partir del DER corregido de la Entrega 6
 -- (Entrega 6/Correcciones entrega anterior/Diagrama Entidad Relacion.drawio).
 -- Las entidades débiles del DER (CaracteristicaPuesto, Factor, Pregunta,

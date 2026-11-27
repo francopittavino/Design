@@ -7,12 +7,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Capit@l Humano<c:if test="${not empty tituloPagina}"> - ${tituloPagina}</c:if></title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
+    <title>Capital Humano<c:if test="${not empty tituloPagina}"> - ${tituloPagina}</c:if></title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css?v=2">
 </head>
 <body>
 <div class="barra">
-    <span class="marca">CAPIT@L HUMANO</span>
+    <span class="marca">CAPITAL HUMANO</span>
     <span>
         <c:choose>
             <c:when test="${not empty sessionScope.consultor}">

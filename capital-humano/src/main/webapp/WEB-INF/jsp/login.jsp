@@ -41,7 +41,7 @@
             </form>
         </c:when>
         <c:otherwise>
-            <div class="seccion">Seleccione el tipo de acceso</div>
+            <div class="seccion centrada">Seleccione el tipo de acceso</div>
             <div class="menu">
                 <a href="${pageContext.request.contextPath}/login?tipo=consultor"><b>Ingresar como usuario consultor</b>
                     <span>Gestión de preguntas, evaluaciones y reportes.</span></a>

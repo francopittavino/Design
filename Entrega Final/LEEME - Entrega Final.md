@@ -68,8 +68,14 @@ Requisitos: JDK 21, Maven 3.9+ y Docker.
     mvn package             # compila, corre los 16 tests y genera target/capital-humano.war
     docker compose up -d    # PostgreSQL 16 con esquema y datos iniciales + Tomcat 10.1
 
-Abrir http://localhost:8080/capital-humano. Para entrar como consultor, el usuario es `jperez` y la contraseña
-`consultor`.
+Abrir http://localhost:8080/capital-humano. Para entrar como consultor, el usuario es `JPEREZ` (el campo lo
+pasa siempre a mayúsculas) y la contraseña `consultor`.
+
+El ingreso al sistema corresponde al CU001 - Autenticar usuario. No es parte del alcance de las etapas 7 y 8;
+se implementó para poder acceder a los CU pedidos. Cumple el flujo del enunciado: elegir el tipo de acceso,
+mensajes de error con el texto exacto, usuario siempre en mayúsculas, como máximo 15 caracteres de usuario y 20
+de contraseña, contraseña y clave con asteriscos, y volver a elegir el tipo de acceso. El LDAP está simulado
+(`facade/AutenticacionLDAPSimulada`).
 
 La base arranca "de fábrica" (`sql/datos_iniciales.sql`): solo trae lo que el sistema no puede cargar porque sus
 ABM están fuera del alcance (empresas, el consultor, opciones de respuesta, competencias, factores, puestos con sus

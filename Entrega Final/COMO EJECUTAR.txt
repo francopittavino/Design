@@ -22,7 +22,9 @@ PASOS
        http://localhost:8080/capital-humano
 
 INGRESO
-- Consultor: usuario jperez, contraseña consultor
+El ingreso al sistema corresponde al CU001 - Autenticar usuario. No es parte del alcance de las etapas 7 y 8;
+se implementó para poder acceder a los CU pedidos.
+- Consultor: usuario JPEREZ (se escribe siempre en mayúsculas), contraseña consultor
 - Candidato: tipo y número de documento, más la clave que se genera al evaluarlo (CU025)
 
 DATOS INICIALES

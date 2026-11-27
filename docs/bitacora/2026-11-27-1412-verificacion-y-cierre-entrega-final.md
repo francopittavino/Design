@@ -23,6 +23,13 @@ Entrega: Final; queda el coloquio, sin fecha todavía
   - Con la base de fábrica, compilando desde el zip descomprimido: `mvn package` con 16 tests OK y 16 de 16
     pasos OK (alta de 6 preguntas, evaluación, cuestionario completo, orden de mérito y PDF).
 
+- Se agregó `COMO EJECUTAR.txt` dentro del zip (`7 y 8 - Implementacion/`).
+- Login (CU001 - Autenticar usuario, fuera del alcance de las etapas 7 y 8): se aclaró en el LEEME y en el txt, y
+  se ajustó a los requerimientos especiales del enunciado. El usuario va siempre en mayúsculas, con un máximo de
+  15 caracteres, y la contraseña con un máximo de 20. Se probaron `jperez`, `JPEREZ` y `JpErEz`, que entran; una
+  contraseña mala, un usuario inexistente y los campos vacíos dan el mensaje de error. Con el zip rearmado:
+  16 tests OK y 16 de 16 pasos OK.
+
 ## Decisiones
 - 0005: interfaz original centrada, datos iniciales sin datos de prueba y zip con carpeta raíz corta.
 

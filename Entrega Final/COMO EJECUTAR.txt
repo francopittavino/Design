@@ -1,0 +1,43 @@
+﻿CAPITAL HUMANO - CÓMO EJECUTAR EL PROGRAMA
+==========================================
+
+REQUISITOS
+- JDK 21 o superior
+- Maven 3.9 o superior
+- Docker (Docker Desktop en Windows)
+- Los puertos 8080 y 5432 libres
+
+PASOS
+1. Abrir una terminal en la carpeta "capital-humano" (está junto a este archivo).
+2. Compilar el programa y correr los tests:
+
+       mvn package
+
+3. Levantar la base de datos (PostgreSQL 16) y el servidor (Tomcat 10.1):
+
+       docker compose up -d
+
+4. Abrir en el navegador:
+
+       http://localhost:8080/capital-humano
+
+INGRESO
+- Consultor: usuario jperez, contraseña consultor
+- Candidato: tipo y número de documento, más la clave que se genera al evaluarlo (CU025)
+
+DATOS INICIALES
+La base arranca sin preguntas, evaluaciones ni cuestionarios: se cargan usando el sistema. Trae solo lo que
+el programa no puede cargar porque sus ABM están fuera del alcance: empresas, el consultor, opciones de
+respuesta, competencias, factores, puestos y candidatos.
+
+Recorrido sugerido:
+1. CU021 Dar de alta Pregunta: cargar al menos 2 preguntas en un factor de cada competencia del puesto que se
+   quiera evaluar (por ejemplo, para el puesto DEV-SR: PROGRAMACIÓN JAVA, TRABAJO EN EQUIPO y COMUNICACIÓN).
+2. CU020 Gestionar Preguntas: buscar las preguntas cargadas.
+3. CU025 Evaluar a Candidatos: elegir candidatos y el puesto, finalizar y exportar las claves a Excel.
+4. CU026 Completar Cuestionario: salir, ingresar como candidato con su documento y clave, y responder.
+5. CU028 Emitir Orden de Mérito: ingresar como consultor, buscar el puesto, emitir e imprimir el PDF.
+
+OTROS COMANDOS
+- Volver la base a su estado inicial:   docker compose down -v   y luego   docker compose up -d
+- Apagar todo:                          docker compose down

@@ -11,9 +11,12 @@ de clases y todo lo necesario para los CU con diagrama de secuencia.
 | Archivo | Para qué |
 |---------|----------|
 | `Diseño original/Entrega Final - ... .zip` | El zip de entrega, con la interfaz como en los wireframes de la Etapa 1. Coincide con el código del repo. |
+| `COMO EJECUTAR.txt` | Instrucciones para ejecutar el programa. Va dentro del zip, en `7 y 8 - Implementacion/`. |
 | `Apunte para el coloquio.pdf` | Uso interno del grupo para preparar el coloquio. No se entrega. |
 
-El zip no lleva ningún LEEME. Se descartó la variante con la interfaz renovada ("Diseño nuevo"): se entrega la
+El zip no lleva ningún LEEME. Solo lleva `7 y 8 - Implementacion/COMO EJECUTAR.txt` (copia de
+`Entrega Final/COMO EJECUTAR.txt`), para que el corrector pueda levantar el programa: requisitos, comandos,
+usuario y recorrido sugerido. Se descartó la variante con la interfaz renovada ("Diseño nuevo"): se entrega la
 original.
 
 ## Contenido del zip

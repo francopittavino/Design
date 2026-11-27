@@ -10,11 +10,11 @@ de clases y todo lo necesario para los CU con diagrama de secuencia.
 
 | Archivo | Para qué |
 |---------|----------|
-| `Diseño original/Entrega Final - ... .zip` | El zip de entrega con la interfaz como en los wireframes de la Etapa 1. Es el que coincide con el código del repo. |
-| `Diseño nuevo/Entrega Final - ... .zip` | El mismo zip, pero con la interfaz renovada (tarjetas con sombra, botones con relieve, íconos en el menú). Cambian solo `estilos.css`, `_encabezado.jspf`, `menu.jsp`, `login.jsp` y `cuestionario.jsp`. |
+| `Diseño original/Entrega Final - ... .zip` | El zip de entrega, con la interfaz como en los wireframes de la Etapa 1. Coincide con el código del repo. |
 | `Apunte para el coloquio.pdf` | Uso interno del grupo para preparar el coloquio. No se entrega. |
 
-Los zips no llevan ningún LEEME. Antes de subir hay que elegir cuál de los dos.
+El zip no lleva ningún LEEME. Se descartó la variante con la interfaz renovada ("Diseño nuevo"): se entrega la
+original.
 
 ## Contenido del zip
 
@@ -63,7 +63,16 @@ Requisitos: JDK 21, Maven 3.9+ y Docker.
 
     cd "7 y 8 - Implementacion/capital-humano"
     mvn package             # compila, corre los 16 tests y genera target/capital-humano.war
-    docker compose up -d    # PostgreSQL 16 con esquema y datos de prueba + Tomcat 10.1
+    docker compose up -d    # PostgreSQL 16 con esquema y datos iniciales + Tomcat 10.1
 
 Abrir http://localhost:8080/capital-humano. Para entrar como consultor, el usuario es `jperez` y la contraseña
-`consultor`. Los candidatos de prueba y los casos que cubre cada CU están en el LEEME de la Entrega 7 y 8.
+`consultor`.
+
+La base arranca "de fábrica" (`sql/datos_iniciales.sql`): solo trae lo que el sistema no puede cargar porque sus
+ABM están fuera del alcance (empresas, el consultor, opciones de respuesta, competencias, factores, puestos con sus
+competencias y candidatos). No trae preguntas, evaluaciones, cuestionarios ni resultados: se generan usando el
+sistema. Para evaluar un puesto (CU025), antes hay que dar de alta (CU021) al menos 2 preguntas en un factor de
+cada competencia del puesto.
+
+El zip descomprime en una carpeta `Entrega Final/` con rutas cortas, para no superar el límite de 260
+caracteres de Windows.

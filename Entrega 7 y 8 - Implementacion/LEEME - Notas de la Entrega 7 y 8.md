@@ -39,6 +39,11 @@ Abrir http://localhost:8080/capital-humano
 
 ## Usuarios y datos de prueba
 
+> **Nota (entrega final, decisión 0005):** estos datos de prueba ya no están en el repo. `sql/datos_prueba.sql` y
+> `sql/generar_datos_prueba.py` se reemplazaron por `sql/datos_iniciales.sql`, que solo trae los catálogos, el
+> consultor `jperez` y los candidatos. Lo de abajo queda como registro de cómo se probó en las Etapas 7 y 8; los
+> archivos se pueden recuperar del historial de git.
+
 Consultores (el LDAP está simulado, la contraseña de todos es `consultor`): `jperez`, `mgomez`.
 
 Candidatos con cuestionario para el CU026:
